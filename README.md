@@ -1,4 +1,4 @@
-# Flush to Crush: Climate-Driven Tree Mortality Analysis
+# Analysis of Tree Mortality Drivers across France
 
 This repository contains the data processing, feature engineering, and machine learning analysis code for our study:
 
