@@ -99,8 +99,7 @@ This code was developed and executed on the following system specifications:
    - Using this dataset, you can run `02_randomforests_analysis.ipynb` and `03_glmm_analysis.ipynb ` without delay.
    - Due to file size constraints, full model fitting results are not included but can be reproduced as described above.
    - To use the precomputed subset, place the `all_runs` folder inside: `notebooks/03_model_fitting_and_analysis/model_runs/`
-   - **Important:** Running the analysis on this subset **does not** recreate all study results, which are based on analyzing all species together.  
-     The subset is intended for reproducibility and transparency purposes.
+   - **Important:** Running the analysis on this subset **does not** recreate all study results that are based on analyzing all species together. The subset is intended for reproducibility and transparency purposes.
 
 5. **Notebook Execution Order**
    - Run notebooks in numerical order, as outputs from earlier notebooks are used in later ones.
