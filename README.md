@@ -2,9 +2,19 @@
 
 This repository contains the data processing, feature engineering, and machine learning analysis code for the study "Flush to Crush: The Paradox of Favourable Springs Leading to Tree Mortality." We analyzed over 600,000 trees from the French National Forest Inventory (2015–2023) to investigate climate-driven mortality trends using explainable machine learning.
 
-[Citation will be added upon publication]
+> [Citation will be added upon publication]
 
----
+## Table of Content
+
+* [Code and Software](#code-and-software)
+    + [System Requirements](#system-requirements)
+    + [Installation Guide](#installation-guide)
++ [Demo and Instructions for Use](#demo-and-instructions-for-use)
+    - [Data Availability](#data-availability)
+    - [Running the Analysis](#running-the-analysis)
+    - [File Formats & Compatibility](#file-formats-compatibility)
+* [Directory Structure](#directory-structure)
+
 
 ## Code and Software
 ### System Requirements
@@ -16,7 +26,6 @@ This code was developed and executed on the following system specifications:
 - **R**: R 4.3.1 in RStudio (Version 2023.09.0+463)
 - **QGIS**: QGIS 3.34 (Prizren)
 
----
 
 ### Installation Guide
 
@@ -52,17 +61,16 @@ This code was developed and executed on the following system specifications:
 
 - QGIS was used to calculate topographical features using default settings (Version 3.34, Prizren).
 
----
 
-### Demo and Instructions for Use
+## Demo and Instructions for Use
 
-#### Data Availability
+### Data Availability
 
 - Due to file size limitations, the raw data cannot be included in this repository.
 - The processed data required for model fitting, analysis, and figure generation can be downloaded from [Zenodo](https://doi.org/10.5281/zenodo.14923701).
 - After downloading, place the `data` folder in the repository’s root directory.
 
-#### Running the Analysis
+### Running the Analysis
 
 1. **Preprocessing National Forest Inventory (NFI) Data**
    - The first step in the analysis is processing the NFI data using the notebooks inside `notebooks/01_process_nfi_data/`:
@@ -105,7 +113,7 @@ This code was developed and executed on the following system specifications:
    - Run notebooks in numerical order, as outputs from earlier notebooks are used in later ones.
    - Expected results shown in the study are shown within each notebook in the repository. Re-running these notebooks locally will remove these displayed results but are always retrievable from this repository.
 
-#### File Formats & Compatibility
+### File Formats & Compatibility
 
 - Data files are stored in the `.feather` format for efficiency.
 - These files can be opened using:
