@@ -2,6 +2,8 @@
 
 This repository contains the data processing, feature engineering, and machine learning analysis code for the study "Flush to Crush: The Paradox of Favourable Springs Leading to Tree Mortality." We analyzed over 600,000 trees from the French National Forest Inventory (2015–2023) to investigate climate-driven mortality trends using explainable machine learning.
 
+[Citation will be added upon publication]
+
 ---
 
 ## Code and Software
@@ -93,7 +95,7 @@ This code was developed and executed on the following system specifications:
      - `05_create_reprod_subset.ipynb` creates a reproducible data subset for the most common nine species.
 
 4. **Precomputed Results for Faster Analysis**
-   - The Zenodo repository provides precomputed model fitting results for the **nine most common species**.
+   - The [Zenodo](https://doi.org/10.5281/zenodo.14923701) repository also provides precomputed model fitting results for the **nine most common species**.
    - Using this dataset, you can run `02_randomforests_analysis.ipynb` and `03_glmm_analysis.ipynb ` without delay.
    - Due to file size constraints, full model fitting results are not included but can be reproduced as described above.
    - To use the precomputed subset, place the `all_runs` folder inside: `notebooks/03_model_fitting_and_analysis/model_runs/`
