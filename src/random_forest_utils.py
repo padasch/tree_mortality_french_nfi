@@ -1,61 +1,57 @@
-# Data wrangling
-from matplotlib.pylab import f
-import pandas as pd
-import numpy as np
+# Standard library
+import datetime
 import random
+import re
+import sys
+import warnings
+from os import error
 
-# Data visualisation
-from ydata_profiling import ProfileReport
+# Data wrangling
+import numpy as np
+import pandas as pd
+
+# Data visualization
 import matplotlib.pyplot as plt
 import seaborn as sns
+from ydata_profiling import ProfileReport
 
 # Machine learning
-from sklearn.linear_model import LogisticRegression
-from sklearn.ensemble import RandomForestRegressor, RandomForestClassifier
-from sklearn.model_selection import train_test_split, GridSearchCV, StratifiedKFold, RandomizedSearchCV
-from sklearn.metrics import (
-    confusion_matrix,
-    accuracy_score,
-    classification_report,
-    roc_auc_score,
-    roc_curve,
-    balanced_accuracy_score,
-)
-from sklearn.preprocessing import OneHotEncoder
+from scipy.stats import chi2_contingency, f_oneway, pearsonr
+from sklearn.ensemble import RandomForestClassifier, RandomForestRegressor
 from sklearn.impute import KNNImputer
 from sklearn.inspection import PartialDependenceDisplay, permutation_importance
-
-# Metrics
+from sklearn.linear_model import LogisticRegression
 from sklearn.metrics import (
-    r2_score,
-    mean_squared_error,
+    accuracy_score,
+    balanced_accuracy_score,
+    classification_report,
+    confusion_matrix,
+    f1_score,
+    make_scorer,
+    precision_score,
+    recall_score,
+    roc_auc_score,
+    roc_curve,
     mean_absolute_error,
+    mean_squared_error,
+    r2_score,
     root_mean_squared_error,
 )
-from sklearn.metrics import (
-    f1_score,
-    recall_score,
-    precision_score,
-    accuracy_score,
-    make_scorer,
+from sklearn.model_selection import (
+    GridSearchCV,
+    RandomizedSearchCV,
+    StratifiedKFold,
+    train_test_split,
 )
+from sklearn.preprocessing import OneHotEncoder
 
-from scipy.stats import pearsonr, f_oneway, chi2_contingency
-
-# My functions
-import sys
-
+# Custom utilities
 sys.path.insert(0, "../../src")
+import chime
+from random_forest_utils import *
 from run_mp import *
 from utilities import *
-from random_forest_utils import *
-import warnings as warnings
 
-# Other
-from os import error
-import datetime
-import re
-import chime
 
 # -----------------------------------------------------------------------------------------------
 
@@ -68,47 +64,6 @@ def ___GENERAL___():
 def write_txt(text):
     with open(text, "w") as file:
         pass
-
-
-def create_new_run_folder(folder_suffix=None):
-    # Get today's date
-    today = datetime.date.today().strftime("%Y-%m-%d")
-
-    # Create the subdirectory in "model_runs" with today's date as the name
-    subdirectory = os.path.join("model_runs", today)
-    os.makedirs(subdirectory, exist_ok=True)
-
-    # Set folder pattern in daily folder
-    folder_pattern = "run_"
-
-    # Filter subdirectory to regex match the folder_pattern (omits other files and folders)
-    all_folders = [
-        folder
-        for folder in os.listdir(subdirectory)
-        if re.match(folder_pattern, folder)
-    ]
-
-    # Count the number of folders in the subdirectory
-    num_folders = len(all_folders)
-
-    # print(num_folders, all_folders)
-
-    # Create a new folder with the name "run_n" where n is the number of folders + 1
-    if num_folders < 9:
-        folder_nr = f"0{num_folders + 1}"
-    else:
-        folder_nr = num_folders + 1
-
-    new_folder = os.path.join(subdirectory, f"{folder_pattern}{folder_nr}")
-
-    if folder_suffix:
-        new_folder += f"_{folder_suffix}"
-
-    os.makedirs(new_folder)
-    print(f"New folder created: {new_folder}")
-
-    return new_folder
-
 
 def create_new_run_folder_treemort(species_name=None):
 
@@ -153,73 +108,6 @@ def create_new_run_folder_treemort(species_name=None):
     print(f"New folder created: {new_folder}")
 
     return new_folder
-
-def create_new_run_folder_treemort_fullrun(folder_suffix=None):
-
-    # Create the subdirectory in "model_runs" with today's date as the name
-    subdirectory = os.path.join(f"model_runs/_fullruns/")
-    os.makedirs(subdirectory, exist_ok=True)
-
-    # Set folder pattern
-    folder_pattern = "run_"
-
-    # Filter subdirectory to regex match the folder_pattern (omits other files and folders)
-    all_folders = [
-        folder
-        for folder in os.listdir(subdirectory)
-        if re.match(folder_pattern, folder)
-    ]
-
-    # If all folders are empty, set the number of folders to 0
-    if all_folders == []:
-        num_folders = 0
-    else:
-        # Get the number of the latest folder
-        num_folders = max(
-            [int(re.search(r"\d+", folder).group()) for folder in all_folders]
-        )
-
-    # Create a new folder with the name "run_n" where n is the number of folders + 1
-    if num_folders < 9:
-        folder_nr = f"0{num_folders + 1}"
-    else:
-        folder_nr = num_folders + 1
-
-    new_folder = os.path.join(subdirectory, f"{folder_pattern}{folder_nr}")
-
-    if folder_suffix is not None:
-        new_folder = new_folder + f" - {folder_suffix}/"
-
-    os.makedirs(new_folder)
-    print(f"New folder created: {new_folder}")
-
-    return new_folder
-
-
-
-# -----------------------------------------------------------------------------------------------
-def get_current_folder():
-    # Get today's date
-    today = datetime.date.today().strftime("%Y-%m-%d")
-
-    # Create the subdirectory in "model_runs" with today's date as the name
-    subdirectory = os.path.join("model_runs", today)
-
-    # Set folder pattern in daily folder
-    folder_pattern = "run_"
-
-    # Filter subdirectory to regex match the folder_pattern (omits other files and folders)
-    all_folders = [
-        folder
-        for folder in os.listdir(subdirectory)
-        if re.match(folder_pattern, folder)
-    ]
-
-    # Since folders are sorted by run number, the last in the list is the newest
-    # print(sorted(all_folders))
-    current_folder = sorted(all_folders)[-1]
-    return current_folder
-
 
 def run_rfecv_treemort(
     dict_categories=None,
@@ -325,8 +213,8 @@ def run_rfecv_treemort(
                 var_ohe_dict=var_ohe_dict,
                 rf_params=rfecv_params,
                 method_importance=user_input["method_importance"],
-                smote_on_test=user_input["do_smote_test_validation"],
-                do_tuning=user_input["do_tuning"],
+                smote_on_test=False,
+                do_tuning=False,
                 rnd_seed=user_input["seed_nr"],
                 verbose=verbose,
                 save_directory=None,
@@ -337,8 +225,8 @@ def run_rfecv_treemort(
                 var_ohe_dict=var_ohe_dict,
                 rf_params=rfecv_params,
                 method_importance=user_input["method_importance"],
-                smote_on_test=user_input["do_smote_test_validation"],
-                do_tuning=user_input["do_tuning"],
+                smote_on_test=False,
+                do_tuning=False,
                 rnd_seed=user_input["seed_nr"],
                 verbose=verbose,
                 save_directory=None,
@@ -556,6 +444,8 @@ def run_rfecv_treemort(
     # chime.success()
 
     return df_cvmetrics_per_nfeatures
+
+
 def SMOTE_cv(
     Xy_all=None,
     var_ohe_dict=None,
@@ -646,25 +536,6 @@ def SMOTE_cv(
         }
         scoring.append(pd.DataFrame(scores, index=[0]))
         
-        # todo Remove this part. I moved permutation to use the full dataset instead.
-        # # Variable importance - Permutation
-        # if method_importance == "permutation":
-        #     i_featimp = assessing_top_predictors(
-        #         vi_method = "permutation",
-        #         rf_in=rf,
-        #         ignore_these=["target", "test_train_strata"],
-        #         X_train_in=X_train,
-        #         X_test_in=X_val,
-        #         y_test_in=y_val,
-        #         dict_ohe_in=var_ohe_dict,
-        #         with_aggregation=do_feat_aggregation,
-        #         verbose=verbose,
-        #         random_state=rnd_seed,
-        #         save_directory=save_directory,
-        #     )
-            
-        #     featimp.append(i_featimp)
-            
     # ! End of CV loop    
     # Get mean and sd of scores
     scoring = pd.DataFrame(
@@ -690,12 +561,6 @@ def SMOTE_cv(
             save_directory=save_directory,
         )
         
-        # todo: Below is the code for aggregating the feature importance over every split.
-        # featimp = pd.DataFrame({
-        #     "Feature": pd.concat(featimp, axis=0).groupby("Feature").mean().reset_index()["Feature"],
-        #     "Importance": pd.concat(featimp, axis=0).groupby("Feature").mean().reset_index()["Importance"],
-        #     "Std": pd.concat(featimp, axis=0).groupby("Feature").std().reset_index()["Importance"],
-        # })
         
     elif method_importance == "impurity":
         if do_tuning:
@@ -720,7 +585,6 @@ def SMOTE_cv(
                 oob_score=True,
             )
         
-            
         # Impurity needs retraining of model on all data
         rf.fit(X, y)
         
@@ -784,46 +648,27 @@ def SMOTE_oob(
     do_feat_aggregation = True if var_ohe_dict is not None else False
     
     # ! Preparation ---------------------------------------------------------------------
-    # Split into test and train
+    # OOB approach does not need to split into train and test
+    # Apply SMOTE and feature importance assessment on all data
+    
+    # Split into X and y
     X = Xy_all.drop(columns=["target", "test_train_strata"], errors="ignore")
     y = Xy_all["target"]
     
-    X_train, X_test, y_train, y_test = train_test_split(
-        X,
-        y,
-        test_size=val_train_split,
-        random_state=rnd_seed,
-        stratify=y,
-    )
-    
     # Apply SMOTE
     sm = SMOTE(random_state=rnd_seed)
-    X_train, y_train = sm.fit_resample(X_train, y_train)
-    if smote_on_test:
-        X_test, y_test = sm.fit_resample(X_test, y_test)
-    
-    # ! DEBUG TO USE ALL DATA FOR OOB! ---------------------------------------------------------------------
-    if True:
-        print("🔴🔴🔴 SMOTE_oob: Running on ALL data without splitting 🔴🔴🔴")
-        # Apply oversampling on all data
-        X, y = sm.fit_resample(X, y)
-        
-        X_train, y_train = X, y
-        X_test, y_test = X, y
+    X, y = sm.fit_resample(X, y)
     
     # ! Tuning ---------------------------------------------------------------------
-    
     if do_tuning:
         if verbose:
             print(" - Tuning...")
-        display("❌❌❌❌ DEBUG 2")
-
             
         # Run small grid search to find best parameters
         rf = RandomForestClassifier(random_state=rnd_seed, n_jobs=-1, class_weight="balanced")
         param_grid = rfe_tuning_params()
         grid = GridSearchCV(rf, param_grid, cv=3, n_jobs=-1, verbose=0)
-        grid.fit(X_train, y_train)
+        grid.fit(X, y)
     
         # Get best parameters
         rf_params = grid.best_params_
@@ -842,7 +687,7 @@ def SMOTE_oob(
     ) 
     
     # Train model
-    rf.fit(X_train, y_train)
+    rf.fit(X, y)
     
     # ! Variable Importance ---------------------------------------------------------------------
     if method_importance == "permutation":
@@ -851,9 +696,9 @@ def SMOTE_oob(
             vi_method = "permutation",
             rf_in=rf,
             ignore_these=["target", "test_train_strata"],
-            # X_train_in=X_train, # Not needed for permutation!
-            X_test_in=X_test,
-            y_test_in=y_test,
+            X_train_in=X,
+            X_test_in=X,
+            y_test_in=y,
             dict_ohe_in=var_ohe_dict,
             with_aggregation=do_feat_aggregation,
             verbose=verbose,
@@ -867,7 +712,7 @@ def SMOTE_oob(
             vi_method = "impurity",
             rf_in=rf,
             ignore_these=["target", "test_train_strata"],
-            X_train_in=X_train,
+            X_train_in=X,
             dict_ohe_in=var_ohe_dict,
             with_aggregation=do_feat_aggregation,
             verbose=verbose,
@@ -878,10 +723,10 @@ def SMOTE_oob(
     featimp.sort_values("Importance", ascending=False, inplace=True)
         
     # ! Model Evaluation ---------------------------------------------------------------------
-    y_pred = rf.predict(X_test)
-    y_pred = pd.Series(y_pred, index=y_test.index)
+    y_pred = rf.predict(X)
+    y_pred = pd.Series(y_pred, index=y.index)
     scoring = bootstrap_classification_metric(
-        y_test, y_pred, ["accuracy", "precision", "recall", "f1", "roc_auc"]
+        y, y_pred, ["accuracy", "precision", "recall", "f1", "roc_auc"]
     )
     
     scoring["oob"] = np.nan
@@ -973,47 +818,6 @@ def move_vars_to_front(df, vars):
 def ___TUNING___():
     pass
 
-
-def set_best_rf_params(model_type):
-    # Return best variables from previous search
-    print(f"Returning best parameters for {model_type} model.")
-
-    if model_type == "regression":
-        # ! REGRESSION -------------------------------------------------------------------
-        best_params = {
-            "n_estimators": 500,
-            "max_features": 0.1,
-            "max_depth": 20,
-            "bootstrap": True,
-            "criterion": "squared_error",  # ["squared_error", "absolute_error", "friedman_mse", "poisson"]
-        }
-
-    elif model_type == "binary":
-        # ! BINARY CLASSIFICATION -------------------------------------------------------------------
-        best_params = {
-            "n_estimators": 500,
-            "max_features": 0.2,
-            "max_depth": 5,
-            "bootstrap": True,
-            "criterion": "gini",
-        }
-
-    elif model_type == "multiclass":
-        # ! MULTI - CLASSIFICATION -------------------------------------------------------------------
-        best_params = {
-            "n_estimators": 500,
-            "max_features": 0.2,
-            "max_depth": 5,
-            "bootstrap": True,
-            "criterion": "gini",
-        }
-    else:
-        chime.warning()
-        raise ValueError("Invalid Model Type!")
-
-    return best_params
-
-
 def plot_grid_search_results(grid, rnd_or_psc=None, save_directory=None, show=True):
     """
     Params:
@@ -1065,128 +869,6 @@ def plot_grid_search_results(grid, rnd_or_psc=None, save_directory=None, show=Tr
     else:
         plt.close()
     # return fig
-
-
-# -----------------------------------------------------------------------------------------------
-def show_top_predictors(
-    X_train=None,
-    vars_to_ohe=None,
-    rf_model=None,
-    with_aggregation=False,
-    n_predictors=20,
-    verbose=False,
-    current_dir=None,
-):
-    # Plot the variable importance
-    importances = rf_model.feature_importances_
-    indices = np.argsort(importances)[::-1]
-
-    df_featimp = pd.DataFrame(
-        {
-            "Feature": X_train.columns[indices],
-            "Importance": importances[indices],
-        }
-    )
-
-    if verbose:
-        print("Original size of df_featimp: ", df_featimp.shape)
-
-    if with_aggregation:
-        # For features matching the string in vars_to_ohe_red, sum up their importances and set name to vars_to_ohe_red
-        # Make sure aggregation procedure is saved to file for checking later on:
-
-        if vars_to_ohe is None:
-            raise ValueError("vars_to_ohe must be specified for aggregation!")
-
-        if verbose:
-            display("Aggregating variables...")
-
-        rows_to_drop = []
-        rows_to_append = []
-        text_to_save = []
-        agg_dict = {}
-
-        # vars_to_ohe_red = [var for var in vars_to_ohe if var in X_train.columns]
-
-        # for var in vars_to_ohe_red:
-        #     n_vars = 0
-        #     feat_sum = 0
-        #     merged_vars = []
-        #     for i in range(len(df_featimp)):
-        #         if var in df_featimp.loc[i, "Feature"]:
-        #             merged_vars.append(df_featimp.loc[i, "Feature"])
-        #             feat_sum += df_featimp.loc[i, "Importance"]
-        #             n_vars += 1
-        #             rows_to_drop.append(i)
-
-        for var in vars_to_ohe:
-            n_vars = 0
-            feat_sum = 0
-            merged_vars = []
-            pattern = r"^" + var + r"_.*"
-
-            for i in range(len(df_featimp)):
-                if re.match(pattern, df_featimp.loc[i, "Feature"]):
-                    merged_vars.append(df_featimp.loc[i, "Feature"])
-                    feat_sum += df_featimp.loc[i, "Importance"]
-                    n_vars += 1
-                    rows_to_drop.append(i)
-
-            # Attach to rows_to_append
-            rows_to_append.append({"Feature": var, "Importance": feat_sum})
-
-            # Print aggregation information
-            # print(f"Merged {n_vars} vars into {var} containing: {merged_vars}")
-
-            # Save aggregation to a dictionary
-            agg_dict[var] = merged_vars
-
-            # Save information to file
-            if verbose:
-                text_to_save = text_to_save + [
-                    f"Merged {n_vars} vars into {var} containing:\n {merged_vars} \n\n"
-                ]
-
-        # Drop the rows that were merged
-        df_featimp = df_featimp.drop(rows_to_drop)
-        df_featimp = pd.concat(
-            [df_featimp, pd.DataFrame(rows_to_append)], ignore_index=True
-        )
-        df_featimp = df_featimp.sort_values(by="Importance", ascending=False)
-
-        if verbose:
-            print("df_featimp after merging: ", df_featimp.shape)
-
-            # Write to file
-            file_path = f"{current_dir}/vip_aggregation_of_ohe_into_their_originals.txt"
-            with open(file_path, "w") as file:
-                for item in text_to_save:
-                    file.write(f"{item}\n\n")
-    else:
-        agg_dict = None
-
-    top_n = df_featimp.head(n_predictors)
-
-    if verbose:
-        # Show top n predictors table
-        display(top_n)
-
-    # Plot the variable importance
-    sns_plot = sns.barplot(x="Importance", y="Feature", data=top_n, color="r")
-    plt.tight_layout()
-
-    # Save the barplot as an image file
-    sns_plot.figure.savefig(f"{current_dir}/vip_plot_aggregated-{with_aggregation}.png")
-
-    # Save the dataframe as a tab-separated file
-    df_featimp.to_csv(f"{current_dir}/vip_table_aggregated-{with_aggregation}.csv")
-
-    if verbose:
-        plt.show()
-    plt.close()
-
-    # Return aggregation dictionary if needed
-    return df_featimp, agg_dict
 
 
 # -----------------------------------------------------------------------------------------------
@@ -1404,132 +1086,6 @@ def assessing_top_predictors(
     return df_featimp_final
 
 
-# -----------------------------------------------------------------------------------------------
-def model_evaluation_regression(
-    rf_model,
-    X_train,
-    y_train,
-    X_test,
-    y_test,
-    save_directory=None,
-    verbose=False,
-):
-    # Predict on the train and test data
-    y_train_pred = rf_model.predict(X_train)
-    y_test_pred = rf_model.predict(X_test)
-
-    # Calculate the evaluation metrics for train data
-    r2_train = r2_score(y_train, y_train_pred)
-    r_train = pearsonr(y_train, y_train_pred)[0]
-    rmse_train = np.sqrt(mean_squared_error(y_train, y_train_pred))
-    mse_train = mean_squared_error(y_train, y_train_pred)
-    mae_train = mean_absolute_error(
-        y_train,
-        y_train_pred,
-    )
-
-    # Calculate the evaluation metrics for test data
-    r2_test = r2_score(y_test, y_test_pred)
-    r_test = pearsonr(y_test, y_test_pred)[0]
-    rmse_test = np.sqrt(mean_squared_error(y_test, y_test_pred))
-    mse_test = mean_squared_error(y_test, y_test_pred)
-    mae_test = mean_absolute_error(y_test, y_test_pred)
-
-    # Print the evaluation metrics for train data
-    if verbose:
-        print("\n--- Results Train | Test ---")
-        print(" - r:\t\t ", round(r_train, 2), " | ", round(r_test, 2))
-        print(" - R2:\t\t ", round(r2_train, 2), " | ", round(r2_test, 2))
-        print(" - MSE:\t\t ", round(mse_train, 2), " | ", round(mse_test, 2))
-        print(" - RMSE:\t ", round(rmse_train, 2), " | ", round(rmse_test, 2))
-        print(" - MAE:\t\t ", round(mae_train, 2), " | ", round(mae_test, 2))
-
-    # Set the figure size
-    plt.figure(figsize=(12, 6))
-
-    # Plot the predicted versus observed values for train data
-    plt.subplot(1, 2, 1)
-    sns.regplot(
-        x=y_train,
-        y=y_train_pred,
-        scatter_kws=dict(color="gray", s=10, alpha=0.8),
-        line_kws=dict(color="blue"),
-    )
-    plt.plot(ls="--", c="red")
-    plt.xlabel("Observations")
-    plt.ylabel("Predictions")
-    plt.title(f"Train Data")  # (target: {y_test.name})")
-
-    # Set y and x axis limits based on the maximum value in y_train_pred or y_train
-    max_value_train = max(max(y_train_pred), max(y_train))
-    plt.ylim(0, max_value_train * 1.15)
-    plt.xlim(0, max_value_train * 1.15)
-
-    # Add a red dotted 1:1 line
-    plt.plot([0, max_value_train], [0, max_value_train], ls="--", c="r")
-
-    # Set equal scaling (i.e., 1:1 aspect ratio)
-    plt.gca().set_aspect("equal", adjustable="box")
-
-    # Add metrics reporting to the top right corner
-    plt.text(
-        0.2,
-        0.95,
-        f"r: {round(r_train, 2)}\nR2: {round(r2_train, 2)}\nRMSE: {round(rmse_train, 2)}\nMAE: {round(mae_train, 2)}",
-        horizontalalignment="right",
-        verticalalignment="top",
-        transform=plt.gca().transAxes,
-        bbox=dict(facecolor="white", edgecolor="black", boxstyle="round"),
-    )
-
-    # Plot the predicted versus observed values for test data
-    plt.subplot(1, 2, 2)
-    sns.regplot(
-        x=y_test,
-        y=y_test_pred,
-        scatter_kws=dict(color="gray", s=10, alpha=0.8),
-        line_kws=dict(color="blue"),
-    )
-    plt.plot(ls="--", c="red")
-    plt.xlabel("Observations")
-    plt.ylabel("Predictions")
-    plt.title(f"Test Data")  # (target: {y_train.name})")
-
-    # Set y and x axis limits based on the maximum value in y_test_pred or y_test
-    max_value_test = max(max(y_test_pred), max(y_test))
-    plt.ylim(0, max_value_test * 1.15)
-    plt.xlim(0, max_value_test * 1.15)
-
-    # Add a red dotted 1:1 line
-    plt.plot([0, max_value_test], [0, max_value_test], ls="--", c="r")
-
-    # Set equal scaling (i.e., 1:1 aspect ratio)
-    plt.gca().set_aspect("equal", adjustable="box")
-
-    # Add metrics reporting to the top right corner
-    plt.text(
-        0.2,
-        0.95,
-        f"r: {round(r_test, 2)}\nR2: {round(r2_test, 2)}\nRMSE: {round(rmse_test, 2)}\nMAE: {round(mae_test, 2)}",
-        horizontalalignment="right",
-        verticalalignment="top",
-        transform=plt.gca().transAxes,
-        bbox=dict(facecolor="white", edgecolor="black", boxstyle="round"),
-    )
-
-    # Adjust the spacing between subplots
-    plt.tight_layout()
-
-    # Save the figure
-    if save_directory is not None:
-        os.makedirs(save_directory, exist_ok=True)
-        plt.savefig(f"{save_directory}/fig_model_evaluation.png")
-
-    # Show the figures
-    if verbose:
-        plt.show()
-    plt.close()
-
 
 # -----------------------------------------------------------------------------------------------
 def model_evaluation_classification(
@@ -1542,6 +1098,7 @@ def model_evaluation_classification(
     save_directory=None,
     metric="f1-score",
     verbose=True,
+    make_plots=False,
 ):
     # Predict probabilities for train and test data
     y_train_proba = rf_model.predict_proba(X_train)
@@ -1673,44 +1230,45 @@ def model_evaluation_classification(
         df_metrics.to_csv(f"{save_directory}/classification_metrics.csv", index=False)
 
     # ! Plot
-    # Set the figure size
-    plt.figure(figsize=(8, 4))
+    if make_plots:
+        # Set the figure size
+        plt.figure(figsize=(8, 4))
 
-    # Combine confusion matrices to find common color scale
-    combined_confusion = np.maximum(confusion_train, confusion_test)
+        # Combine confusion matrices to find common color scale
+        combined_confusion = np.maximum(confusion_train, confusion_test)
 
-    # Plot the confusion matrix for train data
-    plot_confusion_matrix(
-        confusion_train,
-        class_scores_train,
-        unique_labels,
-        title="Train Data",
-        bpmax=metric_max,
-        save_directory=save_directory,
-        test_or_train="train",
-        show=verbose,
-    )
+        # Plot the confusion matrix for train data
+        plot_confusion_matrix(
+            confusion_train,
+            class_scores_train,
+            unique_labels,
+            title="Train Data",
+            bpmax=metric_max,
+            save_directory=save_directory,
+            test_or_train="train",
+            show=verbose,
+        )
 
-    # Plot the confusion matrix for test data
-    plt.figure(figsize=(8, 4))
-    plot_confusion_matrix(
-        confusion_test,
-        class_scores_test,
-        unique_labels,
-        title="Test Data",
-        bpmax=metric_max,
-        save_directory=save_directory,
-        test_or_train="test",
-        show=verbose,
-    )
-    
-    # Plot ROC AUC curve
-    plot_roc_auc_both(
-        (y_train, y_train_proba[:, 1]),
-        (y_test, y_test_proba[:, 1]),
-        save_directory=save_directory,
-        show=verbose
-    )
+        # Plot the confusion matrix for test data
+        plt.figure(figsize=(8, 4))
+        plot_confusion_matrix(
+            confusion_test,
+            class_scores_test,
+            unique_labels,
+            title="Test Data",
+            bpmax=metric_max,
+            save_directory=save_directory,
+            test_or_train="test",
+            show=verbose,
+        )
+        
+        # Plot ROC AUC curve
+        plot_roc_auc_both(
+            (y_train, y_train_proba[:, 1]),
+            (y_test, y_test_proba[:, 1]),
+            save_directory=save_directory,
+            show=verbose
+        )
 
 
 def plot_confusion_matrix(
@@ -1780,56 +1338,7 @@ def plot_confusion_matrix(
     else:
         plt.close()
 
-# def extract_highest_accuracy(y_true, y_pred):
-#     # Calculate accuracy for each class
-#     class_accuracy = np.diag(confusion_matrix(y_true, y_pred)) / np.sum(confusion_matrix(y_true, y_pred), axis=1)
-
-#     # Find the highest accuracy
-#     highest_accuracy = np.max(class_accuracy)
-
-#     return highest_accuracy
-
-def plot_roc_auc(y_true, y_pred_prob, title="ROC AUC Curve", test_or_train=None,save_directory=None, show=True):
-    """
-    Plot the ROC AUC curve.
-
-    Parameters:
-    y_true (array-like): True binary labels.
-    y_pred_prob (array-like): Target scores, can either be probability estimates of the positive class,
-                              confidence values, or binary decisions.
-    title (str): Title of the plot.
-    """
-    # Checks
-    if test_or_train is None:
-        raise ValueError("test_or_train must be specified!")
-    
-    # Calculate the ROC curve
-    fpr, tpr, _ = roc_curve(y_true, y_pred_prob)
-
-    # Calculate the AUC score
-    auc_score = roc_auc_score(y_true, y_pred_prob)
-
-    # Plot the ROC curve
-    plt.figure(figsize=(4, 4))
-    plt.plot(fpr, tpr, label=f"{test_or_train} AUC = {auc_score:.2f}", color="red")
-    plt.plot([0, 1], [0, 1], linestyle="--", color="black")
-    plt.xlim([0.0, 1.0])
-    plt.ylim([0.0, 1.05])
-    plt.xlabel("False Positive Rate")
-    plt.ylabel("True Positive Rate")
-    plt.title(title)
-    plt.legend(loc="lower right")
-    plt.grid()
-    
-    if save_directory is not None:
-        plt.savefig(f"{save_directory}/fig-fig_roc_auc_curve_{test_or_train}.png")
-    
-    if show:
-        plt.show()
-    else:
-        plt.close()
-        
-def plot_roc_auc_both(train_data, test_data, title='ROC AUC Curves', save_directory=None, show=True):
+def plot_roc_auc_both(train_data, test_data, title='ROC AUC Curves', save_directory=None, show=True, make_plot=True):
     """
     Plot the ROC AUC curves for both training and testing data side by side.
     
@@ -1898,58 +1407,60 @@ def plot_roc_auc_both(train_data, test_data, title='ROC AUC Curves', save_direct
     # Calculate bootstrapped ROC for testing data
     fpr_test, tpr_test, aucs_test = bootstrap_roc(y_true_test, y_pred_prob_test, n_bootstraps, random_seed)
 
-    # Create a figure with two subplots
-    fig, axs = plt.subplots(1, 2, figsize=(12, 6))
-
-    # Plot the ROC curve for training data with uncertainty bands
-    plot_roc_with_uncertainty(axs[0], fpr_train, tpr_train, aucs_train, 'Training Data', 'blue')
-    axs[0].plot([0, 1], [0, 1], linestyle='--', color='black')
-    axs[0].set_xlim([0.0, 1.0])
-    axs[0].set_ylim([0.0, 1.05])
-    axs[0].set_xlabel('False Positive Rate')
-    axs[0].set_ylabel('True Positive Rate')
-    axs[0].set_title('Training Data')
-    axs[0].legend(loc='lower right')
-
-    # Plot the ROC curve for testing data with uncertainty bands
-    plot_roc_with_uncertainty(axs[1], fpr_test, tpr_test, aucs_test, 'Testing Data', 'red')
-    axs[1].plot([0, 1], [0, 1], linestyle='--', color='black')
-    axs[1].set_xlim([0.0, 1.0])
-    axs[1].set_ylim([0.0, 1.05])
-    axs[1].set_xlabel('False Positive Rate')
-    axs[1].set_ylabel('True Positive Rate')
-    axs[1].set_title('Testing Data')
-    axs[1].legend(loc='lower right')
-
-    # Set the overall title
-    fig.suptitle('ROC Curve with Uncertainty Bands', fontsize=12, weight='bold')
-
-    # Adjust layout
-    plt.tight_layout()
-
-    # display(" --- AUC Scores ---")
-    # print(f"Mean AUC Train: {np.mean(aucs_train):.2f}")
-    # print(f"Mean AUC Test: {np.mean(aucs_test):.2f}")
-    
-    # Save the plot if save_directory is provided
-    if save_directory is not None:
-        os.makedirs(save_directory, exist_ok=True)
-        plt.savefig(f"{save_directory}/fig-roc_auc_curves.png")
-        pd.DataFrame({
+    # Save the AUC scores
+    pd.DataFrame({
             "test_mean": np.mean(aucs_test),
             "test_sd": np.std(aucs_test),
             "train_mean": np.mean(aucs_train),
             "train_sd": np.std(aucs_train)
-            
-        }, index=[0]).to_csv(f"{save_directory}/final_model_roc_auc_prob-based.csv", index=False)
+        }, index=[0]).to_csv(f"{save_directory}/roc_auc.csv", index=False)
 
-    # Show or close the plot based on the `show` parameter
-    if show:
-        plt.show()
-    else:
-        plt.close()
+    if make_plot:
+        # Create a figure with two subplots
+        fig, axs = plt.subplots(1, 2, figsize=(12, 6))
 
-def plot_pr_auc_both(train_data, test_data, title='PR AUC Curves', save_directory=None, show=True):
+        # Plot the ROC curve for training data with uncertainty bands
+        plot_roc_with_uncertainty(axs[0], fpr_train, tpr_train, aucs_train, 'Training Data', 'blue')
+        axs[0].plot([0, 1], [0, 1], linestyle='--', color='black')
+        axs[0].set_xlim([0.0, 1.0])
+        axs[0].set_ylim([0.0, 1.05])
+        axs[0].set_xlabel('False Positive Rate')
+        axs[0].set_ylabel('True Positive Rate')
+        axs[0].set_title('Training Data')
+        axs[0].legend(loc='lower right')
+
+        # Plot the ROC curve for testing data with uncertainty bands
+        plot_roc_with_uncertainty(axs[1], fpr_test, tpr_test, aucs_test, 'Testing Data', 'red')
+        axs[1].plot([0, 1], [0, 1], linestyle='--', color='black')
+        axs[1].set_xlim([0.0, 1.0])
+        axs[1].set_ylim([0.0, 1.05])
+        axs[1].set_xlabel('False Positive Rate')
+        axs[1].set_ylabel('True Positive Rate')
+        axs[1].set_title('Testing Data')
+        axs[1].legend(loc='lower right')
+
+        # Set the overall title
+        fig.suptitle('ROC Curve with Uncertainty Bands', fontsize=12, weight='bold')
+
+        # Adjust layout
+        plt.tight_layout()
+
+        # display(" --- AUC Scores ---")
+        # print(f"Mean AUC Train: {np.mean(aucs_train):.2f}")
+        # print(f"Mean AUC Test: {np.mean(aucs_test):.2f}")
+        
+        # Save the plot if save_directory is provided
+        if save_directory is not None:
+            os.makedirs(save_directory, exist_ok=True)
+            plt.savefig(f"{save_directory}/fig-roc_auc_curves.png")
+
+        # Show or close the plot based on the `show` parameter
+        if show:
+            plt.show()
+        else:
+            plt.close()
+
+def plot_pr_auc_both(train_data, test_data, title='PR AUC Curves', save_directory=None, show=True, make_plot=True):
     """
     Plot the PR AUC curves for both training and testing data side by side.
     
@@ -2018,51 +1529,53 @@ def plot_pr_auc_both(train_data, test_data, title='PR AUC Curves', save_director
 
     # Calculate bootstrapped PR-AUC for testing data
     precision_test, recall_test, pr_aucs_test = bootstrap_pr(y_true_test, y_pred_prob_test, n_bootstraps, random_seed)
-
-    # Create a figure with two subplots
-    fig, axs = plt.subplots(1, 2, figsize=(12, 6))
-
-    # Plot the PR curve for training data with uncertainty bands
-    plot_pr_with_uncertainty(axs[0], precision_train, recall_train, pr_aucs_train, 'Training Data', 'blue')
-    axs[0].set_xlim([0.0, 1.0])
-    axs[0].set_ylim([0.0, 1.05])
-    axs[0].set_xlabel('Recall')
-    axs[0].set_ylabel('Precision')
-    axs[0].set_title('Training Data')
-    axs[0].legend(loc='lower left')
-
-    # Plot the PR curve for testing data with uncertainty bands
-    plot_pr_with_uncertainty(axs[1], precision_test, recall_test, pr_aucs_test, 'Testing Data', 'red')
-    axs[1].set_xlim([0.0, 1.0])
-    axs[1].set_ylim([0.0, 1.05])
-    axs[1].set_xlabel('Recall')
-    axs[1].set_ylabel('Precision')
-    axs[1].set_title('Testing Data')
-    axs[1].legend(loc='lower left')
-
-    # Set the overall title
-    fig.suptitle('Precision-Recall Curve with Uncertainty Bands', fontsize=12, weight='bold')
-
-    # Adjust layout
-    plt.tight_layout()
-
-    # Save the plot if save_directory is provided
-    if save_directory is not None:
-        os.makedirs(save_directory, exist_ok=True)
-        plt.savefig(f"{save_directory}/fig-pr_auc_curves.png")
-        pd.DataFrame({
+    
+    # Save the AUC scores
+    pd.DataFrame({
             "test_mean": np.mean(pr_aucs_test),
             "test_sd": np.std(pr_aucs_test),
             "train_mean": np.mean(pr_aucs_train),
             "train_sd": np.std(pr_aucs_train)
-            
-        }, index=[0]).to_csv(f"{save_directory}/final_model_pr_auc_prob-based.csv", index=False)
+        }, index=[0]).to_csv(f"{save_directory}/pr_auc.csv", index=False)
 
-    # Show or close the plot based on the `show` parameter
-    if show:
-        plt.show()
-    else:
-        plt.close()
+    if make_plot:
+        # Create a figure with two subplots
+        fig, axs = plt.subplots(1, 2, figsize=(12, 6))
+
+        # Plot the PR curve for training data with uncertainty bands
+        plot_pr_with_uncertainty(axs[0], precision_train, recall_train, pr_aucs_train, 'Training Data', 'blue')
+        axs[0].set_xlim([0.0, 1.0])
+        axs[0].set_ylim([0.0, 1.05])
+        axs[0].set_xlabel('Recall')
+        axs[0].set_ylabel('Precision')
+        axs[0].set_title('Training Data')
+        axs[0].legend(loc='lower left')
+
+        # Plot the PR curve for testing data with uncertainty bands
+        plot_pr_with_uncertainty(axs[1], precision_test, recall_test, pr_aucs_test, 'Testing Data', 'red')
+        axs[1].set_xlim([0.0, 1.0])
+        axs[1].set_ylim([0.0, 1.05])
+        axs[1].set_xlabel('Recall')
+        axs[1].set_ylabel('Precision')
+        axs[1].set_title('Testing Data')
+        axs[1].legend(loc='lower left')
+
+        # Set the overall title
+        fig.suptitle('Precision-Recall Curve with Uncertainty Bands', fontsize=12, weight='bold')
+
+        # Adjust layout
+        plt.tight_layout()
+
+        # Save the plot if save_directory is provided
+        if save_directory is not None:
+            os.makedirs(save_directory, exist_ok=True)
+            plt.savefig(f"{save_directory}/fig-pr_auc_curves.png")
+
+        # Show or close the plot based on the `show` parameter
+        if show:
+            plt.show()
+        else:
+            plt.close()
 
 
 # -----------------------------------------------------------------------------------------------
@@ -2108,457 +1621,6 @@ def do_ohe(Xy, variables_not_to_ohe=[], verbose=True):
 
 
 # -----------------------------------------------------------------------------------------------
-def impute_numerical_na(
-    Xy_train_in,
-    Xy_test_in,
-    target_in,
-    method="knn",
-    n_neighbours=10,
-    vars_not_to_impute=[],
-    verbose=True,
-):
-    # Define X for imputation
-    X_train_in = Xy_train_in.copy().drop(columns=target_in).reset_index(drop=True)
-    X_test_in = Xy_test_in.copy().drop(columns=target_in).reset_index(drop=True)
-
-    # Get numerical variables with NAs (need to check each dataset separately)
-    all_numerics = X_train_in.columns[(X_train_in.dtypes != "O")].tolist()
-
-    num_na_train = X_train_in.columns[
-        (X_train_in.dtypes != "O") & (X_train_in.isna().any())
-    ].tolist()
-    num_na_test = X_test_in.columns[
-        (X_test_in.dtypes != "O") & (X_test_in.isna().any())
-    ].tolist()
-
-    # Remove target from imputation if still in dataset)
-    if target_in in num_na_train:
-        num_na_train.remove(target_in, errors="ignore")
-    if target_in in num_na_test:
-        num_na_test.remove(target_in, errors="ignore")
-
-    num_na_train = list(set(num_na_train + num_na_test))
-
-    # Check if target had NA values and inform
-    detected_vars = []
-    for var in vars_not_to_impute:
-        if var in num_na_train:
-            detected_vars.append(var)
-            num_na_train.remove(var)
-
-    # Do imputation
-    if len(num_na_train) > 0:
-        if method == "knn":
-            imputer = KNNImputer(n_neighbors=n_neighbours)
-            X_train_in[num_na_train] = imputer.fit_transform(X_train_in[num_na_train])
-            X_test_in[num_na_train] = imputer.transform(X_test_in[num_na_train])
-
-        elif method == "mean":
-            for var in num_na_train:
-                test_mean = X_train_in[var].mean()
-                X_train_in[var] = X_train_in[var].fillna(test_mean)
-                X_test_in[var] = X_test_in[var].fillna(test_mean)
-
-        elif method == "median":
-            for var in num_na_train:
-                test_median = X_train_in[var].median()
-                X_train_in[var] = X_train_in[var].fillna(test_median)
-                X_test_in[var] = X_test_in[var].fillna(test_median)
-
-        elif method == "minus_9999":
-            X_train_in[num_na_train] = X_train_in[num_na_train].fillna(-9999)
-            X_test_in[num_na_train] = X_test_in[num_na_train].fillna(-9999)
-
-    # Attach target to X_train_in
-    Xy_train_out = X_train_in.copy()
-    Xy_train_out[target_in] = Xy_train_in[target_in]
-
-    Xy_test_out = X_test_in.copy()
-    Xy_test_out[target_in] = Xy_test_in[target_in]
-
-    if verbose:
-        print(
-            f"impute_numerical_na():",
-            f"\n - Shape of Xy_train before imputation: {Xy_train_in.shape}",
-            f"\n - Shape of Xy_train before imputation: {Xy_train_out.shape}",
-            f"\n",
-            f"\n - Shape of Xy_test before imputation: {Xy_test_in.shape}",
-            f"\n - Shape of Xy_test before imputation: {Xy_test_out.shape}",
-            f"\n",
-            f"\n - Out of {len(all_numerics)}, {len(num_na_train)} had NA values and were imputed with method {method} (for KNN, n = {n_neighbours}).",
-            # f"\n - Imputed variables: {' | '.join(sorted(num_na_train))}",
-        )
-
-    if len(detected_vars) > 0:
-        print(
-            f"\n - ❌❌❌ Variables {detected_vars} had NA values but are not meant to be imputed! They were not imputed but their values should be fixed! ❌❌❌"
-        )
-
-    return Xy_train_out, Xy_test_out, num_na_train
-
-
-# -----------------------------------------------------------------------------------------------
-def overlay_barplot(ax, df1, df1_name, df2, df2_name, variable, subtitle=None):
-    # Number of levels in variable
-    nvar = len(set([var for var in df1[variable]] + [var for var in df2[variable]]))
-
-    # Calculate the relative frequencies for each level in df1
-    df1_counts = df1[variable].value_counts(normalize=True).sort_values(ascending=False)
-    df1_counts = df1_counts * 100
-
-    # Calculate the relative frequencies for each level in df2
-    df2_counts = df2[variable].value_counts(normalize=True).sort_values(ascending=False)
-    df2_counts = df2_counts * 100
-
-    # Combine the counts into a single dataframe
-    df_counts = pd.concat([df1_counts, df2_counts], axis=1)
-    df_counts.columns = [df1_name, df2_name]
-
-    # Plotting the bar plot
-    ax.barh(
-        df_counts.index, df_counts[df1_name], align="center", label=df1_name, alpha=0.5
-    )
-    ax.barh(
-        df_counts.index, df_counts[df2_name], align="center", label=df2_name, alpha=0.5
-    )
-
-    # Adding titles and labels
-    ax.set_title("Overlaying Bar Plot of variable of total " + str(nvar) + " strata")
-    ax.set_xlabel("Relative Frequency [%]")
-    ax.set_ylabel("Level of variable")
-    ax.legend()
-
-    if subtitle is not None:
-        ax.text(
-            0.5,
-            0.95,
-            subtitle,
-            transform=ax.transAxes,
-            ha="center",
-            va="center",
-        )
-
-
-# -----------------------------------------------------------------------------------------------
-def get_weights_from_y(y_in, method="none"):
-    if method == "none":
-        return np.arange(1, len(y_in) + 1)
-    if method == "squared":
-        return y_in**2
-    if method == "cubic":
-        return y_in**3
-    if method == "quadratic":
-        return y_in**4
-    if method == "inverse":
-        return 1 / y_in
-    if method == "inverse_squared":
-        return 1 / y_in**2
-
-
-# -----------------------------------------------------------------------------------------------
-def aggregate_strata_with_too_little_obs(
-    Xy_in,
-    strata_vars,
-    do_fold_too,
-    split_test,
-    cv_fold,
-    seed_nr,
-    print_plots=True,
-):
-    # Start printing call
-    print(
-        f"wrangle_stratification_of_dataset():",
-        end="",
-    )
-
-    # ----------------------------------------
-    # Get df_all_strata for splitting
-    df_all_strata = merge_small_strata_to_one(Xy_in, strata_vars, "split", cv_fold)
-
-    # Pick arbitrary target that is not in strata_vars
-    random_column = random.choice(
-        df_all_strata.drop(columns=strata_vars + ["test_train_strata"]).columns
-    )
-    # Split dataset into train and test set
-    xtr, xte, ytr, yte = train_test_split(
-        df_all_strata.drop(random_column, axis=1),
-        df_all_strata[random_column],
-        test_size=split_test,
-        random_state=seed_nr,
-        stratify=df_all_strata["test_train_strata"],
-    )
-
-    # strata_groups = df_all_strata["test_train_strata"].unique()
-
-    if not do_fold_too:
-        fig, ax = plt.subplots(1, figsize=(12.5, 25))
-        display()
-        overlay_barplot(ax, xtr, "Train", xte, "Test", "test_train_strata", "All Data")
-
-        return df_all_strata.reset_index(drop=True)
-    else:
-        pass
-
-    # Do folding too
-    # ----------------------------------------
-    print(
-        f"\n - Check strata aggregation needed for splitted X_train to successfully create {cv_fold} CV-folds...",
-        end="",
-    )
-
-    # Take training split from above
-    new_df = pd.concat([xtr.reset_index(drop=True), ytr.reset_index(drop=True)], axis=1)
-    new_df = attach_test_train_strata(
-        new_df, strata_vars
-    )  # Attach test_train_strata variable
-    new_df = merge_small_strata_to_one(
-        new_df, strata_vars, "fold", cv_fold
-    )  # Merge strata for folding
-
-    # Define folding
-    skf = StratifiedKFold(n_splits=cv_fold, shuffle=True)
-
-    # Run folding to see if it works with the merged strata
-    for fold, (train_index, test_index) in enumerate(
-        skf.split(new_df, new_df["test_train_strata"])
-    ):
-        xtr, xte = (
-            new_df.iloc[train_index],
-            new_df.iloc[test_index],
-        )
-
-    # Get strata groups that works for split and fold
-    final_strata_groups = new_df["test_train_strata"].unique()
-
-    # FINAL MERGING OF STRATA AND DISPLAY
-    # ----------------------------------------
-    print(
-        f"\n - ✅ Got the final groups for strata aggregation.",
-        f"\n  - Running routine again to create final distribution plots of train/test splits and train/validation folds.",
-        end="",
-    )
-
-    df_out = Xy_in.copy()  # Get copy of input data
-    df_out = attach_test_train_strata(
-        df_out, strata_vars
-    )  # Attach test_train_strata variable
-    org_number_of_strata = df_out[
-        "test_train_strata"
-    ].nunique()  # Check how many stratification there were originally
-
-    # If strata in df_out are not in final_strata_groups, then replace with "others"
-    for s in df_out["test_train_strata"].unique():
-        if s not in final_strata_groups:
-            df_out["test_train_strata"] = df_out["test_train_strata"].replace(
-                s, "others"
-            )
-
-    # Print information
-    print(
-        f"\n  - For successful splitting and {cv_fold} CV-folds, {org_number_of_strata} strata were merged into {len(final_strata_groups)} strata.",
-        f"\n  - Stratas with too little observations were merged into 'others', which makes up {round(df_out[df_out['test_train_strata'] == 'others'].shape[0]/df_out.shape[0]*100, 2)}% of the data.",
-    )
-
-    # Make figures (for this, we first need to do the splitting and folding again!)
-    # ----------------------------------------
-    # SPLIT
-    # Pick arbitrary target that is not in test_train_strata
-    random_column = random.choice(
-        df_out.drop(columns=strata_vars + ["test_train_strata"]).columns
-    )
-    # Split dataset into train and test set
-    xtr, xte, ytr, yte = train_test_split(
-        df_out.drop(random_column, axis=1),
-        df_out[random_column],
-        test_size=split_test,
-        random_state=seed_nr,
-        stratify=df_all_strata["test_train_strata"],
-    )
-    if print_plots:
-        # Make plot
-        fig, ax = plt.subplots(1, figsize=(25, 25))
-        display()
-        overlay_barplot(ax, xtr, "Train", xte, "Test", "test_train_strata", "All Data")
-
-        # FOLD
-        # Take training split from above
-        new_df = pd.concat(
-            [xtr.reset_index(drop=True), ytr.reset_index(drop=True)], axis=1
-        )
-        # No need to re-attach test_train_strata variable as above, because it is already attached
-        # from the definition of df_out.
-
-        # Define folding (take same as above, so no need to redefine)
-        # Initiate plot
-        fig, axs = plt.subplots(1, cv_fold, figsize=(25, 25))
-        # Do folds
-        for fold, (train_index, test_index) in enumerate(
-            skf.split(new_df, new_df["test_train_strata"])
-        ):
-            xtr, xte = (
-                new_df.iloc[train_index],
-                new_df.iloc[test_index],
-            )
-
-            # Make plot
-            axs[fold] = overlay_barplot(
-                axs[fold],
-                xtr,
-                "Train",
-                xte,
-                "Test",
-                "test_train_strata",
-                str("Fold " + str(fold + 1)),
-            )
-
-    # Return final dataframe with correctly merged strata
-    return df_out.reset_index(drop=True)
-
-
-# -----------------------------------------------------------------------------------------------
-
-
-# ----------------------------------------
-# DEFINE FUNCTIONS FOR STRATIFICATION DISTRIBUTION CHECKS
-# ----------------------------------------
-# Attach test_train_strata dummy
-def attach_test_train_strata(df_in, var_list):
-    df_in["test_train_strata"] = ""
-
-    # Attach test_train_strata variables
-    for var in var_list:
-        df_in["test_train_strata"] = df_in["test_train_strata"] + (
-            "_" + df_in[var].astype(str)
-        )
-    return df_in
-
-
-# Define merger function
-def merge_small_strata_to_one(Xy_in, strata_vars, split_or_fold, cv_fold):
-    # Start printing
-    print(
-        f"\n - Merging strata for successful {split_or_fold}...",
-        end="",
-    )
-
-    # Get min. number of observations per group
-    if split_or_fold == "split":
-        min_obs_per_group = 2
-        print(
-            f"\n  - For splitting, the min. number of observations per group is {min_obs_per_group}.",
-            end="",
-        )
-    if split_or_fold == "fold":
-        min_obs_per_group = cv_fold
-        print(
-            f"\n  - For cv-folds, the min. number of observations per group is {cv_fold}.",
-            end="",
-        )
-
-    # Aggregate strata according to min_obs_per_group
-    # ----------------------------------------
-    df_all_strata = Xy_in.copy()  # Get temporary df
-    df_all_strata = attach_test_train_strata(
-        df_all_strata, strata_vars
-    )  # Attach test_train_strata variable
-
-    stratification_lvls = df_all_strata[
-        "test_train_strata"
-    ].nunique()  # Check how many stratification lvls there are
-
-    print(
-        f"\n  - Stratification levels: {stratification_lvls}, based on variables: {strata_vars}.",
-        end="",
-    )
-
-    # Get df with observations per strata
-    df_observations_per_strata = df_all_strata.groupby("test_train_strata").size()
-    # Reduce df to only hold strata with less than min_obs_per_group observations
-    df_strata_with_too_little_obs = df_observations_per_strata[
-        df_observations_per_strata < min_obs_per_group
-    ]
-
-    # Get sum of observations within strata with too little obs
-    sum_of_observations_within_strata_with_too_little_obs = (
-        df_strata_with_too_little_obs.sum()
-    )
-
-    # Print results
-    org_numb_strata = df_all_strata["test_train_strata"].nunique()
-
-    print(
-        f"\n  - Out of {df_all_strata.shape[0]} observations, there are: {sum_of_observations_within_strata_with_too_little_obs} ({round(sum_of_observations_within_strata_with_too_little_obs/df_all_strata.shape[0]*100, 2)}%) that are in strata with less than {min_obs_per_group} observations.",
-        f"\n  - These {sum_of_observations_within_strata_with_too_little_obs} observations from {df_strata_with_too_little_obs.shape[0]} stratas will be put into strata 'others'",
-        end="",
-    )
-
-    # Replace strata with too little obs with "others"
-    for s in df_strata_with_too_little_obs.index:
-        df_all_strata["test_train_strata"] = df_all_strata["test_train_strata"].replace(
-            s, "others"
-        )
-
-    fin_numb_strata = df_all_strata["test_train_strata"].nunique()
-
-    print(
-        f"\n  - From {org_numb_strata} strata, {fin_numb_strata} strata remain after merging strata with less than {min_obs_per_group} observations.",
-    )
-
-    return df_all_strata
-
-
-# -----------------------------------------------------------------------------------------------
-# def split_into_quantiles(arr, n_groups):
-# labels = [f"{i/n_groups*100:.0f}-{(i+1)/n_groups*100:.0f}%" for i in range(n_groups)]
-# groups = pd.qcut(arr, n_groups, duplicates='drop')
-# print(f"Created {n_groups} groups: {labels}")
-# return groups
-
-
-# -----------------------------------------------------------------------------------------------
-def get_tune_grid_regression():
-    param_grid = {
-        "n_estimators": [
-            10,
-            100,
-            250,
-            # 500,
-            # 1000
-        ],  # [int(x) for x in np.linspace(start=10, stop=2500, num=5)],
-        "max_features": [
-            # "sqrt",
-            # "log2",
-            0.01,
-            # 0.1,
-            0.25,
-            # 0.5,
-            # 0.75,
-            # 1,
-        ],
-        # + [x for x in np.linspace(start=0.1, stop=0.8, num=5)],
-        "max_depth": [
-            1,
-            # 5,
-            8,
-            15,
-            # 20,
-            # 25,
-            # 100,
-        ],  # [int(x) for x in np.linspace(1, 50, num=5)],
-        "criterion": [
-            "squared_error",
-            # "absolute_error",
-            # "friedman_mse",
-            # "poisson",
-        ],
-        # "min_samples_split": [2, 5, 10
-        # "min_samples_leaf": [1, 2, 4]
-        # "bootstrap": [True, False],
-    }
-    return param_grid
-
-
-# -----------------------------------------------------------------------------------------------
 def get_tune_grid_classification():
     param_grid = {
         "n_estimators": [100, 500, 1000],  # Has minor influence
@@ -2571,152 +1633,6 @@ def get_tune_grid_classification():
     }
 
     return param_grid
-
-
-# -----------------------------------------------------------------------------------------------
-def plot_quantiles(data, num_quantiles, variable_name, directory=None):
-    # Calculate quantiles
-    quantiles = np.percentile(
-        data[variable_name], np.linspace(0, 100, num_quantiles + 1)
-    )
-
-    # Create histogram
-    sns.histplot(data, x=variable_name)
-    # plt.hist(array, bins="auto", color="royalblue", alpha=0.7, rwidth=0.85)
-
-    # Add vertical lines for quantiles
-    for quantile in quantiles:
-        plt.axvline(quantile, color="red", linestyle="--")
-
-    # Set labels and title
-    plt.xlabel("Value")
-    plt.ylabel("Frequency")
-    plt.title(f"Histogram of {variable_name} with {num_quantiles} Quantiles")
-
-    # Save if input dir is given
-    if directory is not None:
-        plt.savefig(f"{directory}/fig_histogram_{variable_name}.png")
-
-    # Show the plot
-    plt.show()
-
-
-# -----------------------------------------------------------------------------------------------
-def pdp_mp_wrapper(target, **kwargs):
-    return PartialDependenceDisplay.from_estimator(target=target, **kwargs)
-
-
-# -----------------------------------------------------------------------------------------------
-def plot_aggregated_pdp(my_pdp, top_vars_pdp_ohed, var_ohe_dict, ymax=None):
-    # Get dictionary ------------------------------------------------------------------------
-    # Reduce var_ohe_dict to hold only keys where a value in the key is in top_vars_pdp_ohed
-    var_ohe_dict_reduced = {
-        key: value
-        for key, value in var_ohe_dict.items()
-        if any(col in top_vars_pdp_ohed for col in value)
-    }
-
-    # Flip dict for easier handling
-    dict_flipd = {
-        ohe: orig for orig, ohe_list in var_ohe_dict_reduced.items() for ohe in ohe_list
-    }
-
-    # Extract data from PDP object ------------------------------------------------------------
-    final_df = pd.DataFrame(
-        {
-            "ohed_var": [],
-            "non_ohed_var": [],
-            "y_values": [],
-            "x_values": [],
-        }
-    )
-
-    for i in range(len(top_vars_pdp_ohed)):
-        new_row = pd.DataFrame(
-            {
-                "ohed_var": top_vars_pdp_ohed[i],
-                "non_ohed_var": dict_flipd[top_vars_pdp_ohed[i]],
-                "y_values": my_pdp.pd_results[i]["average"][0].tolist(),
-                "x_values": my_pdp.pd_results[i]["values"][0].tolist(),
-            }
-        )
-        # Append new row to final_df
-        final_df = pd.concat([final_df, new_row], axis=0)
-
-    max_effect = np.max(final_df["y_values"])
-    if ymax is None:
-        max_effect = None
-    df_groups = final_df.groupby("non_ohed_var")
-
-    # Plot PDPs --------------------------------------------------------------------------------
-    # Create a figure with m rows x n columns of subplots
-    fig, axs = plt.subplots(3, 3, figsize=(10, 10))  # Adjust the figure size as needed
-    axs = axs.flatten()  # Flatten the array to easily iterate over it
-
-    # Iterate over groups and plot
-    ax_idx = 0
-    for name, group in df_groups:
-        if len(var_ohe_dict_reduced[name]) > 1:
-            # Make barplot
-            make_pdp_subplots(
-                ax=axs[ax_idx],
-                df_in=group,
-                var_name=name,
-                var_type="categorical",
-                ymax=max_effect,
-            )
-        else:
-            # Make lineplot
-            make_pdp_subplots(
-                ax=axs[ax_idx],
-                df_in=group,
-                var_name=name,
-                var_type="numerical",
-                ymax=max_effect,
-            )
-        ax_idx += 1
-        if ax_idx == 10:  # Stop plotting after 10 plots
-            break
-
-    # Turn off the last two axes
-    for ax in axs[10:]:
-        ax.axis("off")
-
-    plt.tight_layout()
-    plt.show()
-
-
-def make_pdp_subplots(ax, df_in, var_name, var_type, ymax=None):
-
-    if var_type == "categorical":
-        df = df_in[df_in["non_ohed_var"] == var_name].copy()
-        pivot_df = df.pivot(index="ohed_var", columns="x_values", values="y_values")
-        pivot_df["difference"] = pivot_df[1] - pivot_df[0]
-
-        # Plot on the provided axis
-        ax.bar(pivot_df.index, pivot_df["difference"])
-
-        ax.set_xlabel(f"Levels in {var_name}")
-        ax.set_xticks(ax.get_xticks())
-        ax.set_xticklabels(ax.get_xticklabels(), rotation=90, fontsize=6)
-        ax.set_ylabel("Difference in Y")
-        if ymax is not None:
-            ax.axhline(0, linestyle="dotted", color="gray")
-            ax.set_ylim(-ymax * 1.2, ymax * 1.2)
-        ax.set_title(f"{var_name}")
-
-    else:
-        df_tmp = df_in[df_in["non_ohed_var"] == var_name].copy()
-        df_tmp["x_values"] = df_tmp["x_values"].astype(float)
-
-        # Plot on the provided axis
-        ax.plot(df_tmp["x_values"], df_tmp["y_values"])
-        ax.set_xlabel(var_name)
-        ax.set_ylabel("Partial Dependence")
-        if ymax is not None:
-            ax.axhline(0, linestyle="dotted", color="gray")
-            ax.set_ylim(-ymax * 1.2, ymax * 1.2)
-        ax.set_title(f"{var_name}")
 
 
 # ------------------------------------------------------------------------------------
@@ -2938,13 +1854,6 @@ def decode_one_hot_encoding(X_train, var_ohe_dict):
 
     return decoded_df
 
-
-# Example usage:
-# Replace 'your_var_ohe_dict' with the actual variable one-hot-encoding dictionary
-# For example: {'var': ['var_1', 'var_2']}
-# decoded_df = decode_one_hot_encoding(X_train, your_var_ohe_dict)
-
-
 def cramers_v(array1, array2):
     # Function to calculate Cramer's V
     # From: https://www.statology.org/cramers-v-in-python/
@@ -2963,7 +1872,6 @@ def cramers_v(array1, array2):
     except ValueError as e:
         # print(f" - Error calculating Cramer's V: {e}")
         return 0
-
 
 def plot_corr_heatmap(
     corr,
@@ -3113,39 +2021,40 @@ def remove_correlation_based_on_vi(
         ]
 
     # ! Make plots if requested
-    if not num_num_empty:
-        plot_corr_heatmap(
-            corr_matrix_numerical_nominal,
-            title="Comparison Numerical vs. Nominal via ANOVA",
-            vmin=0.001,
-            vmax=0.1,
-            center=0.05,
-            cmap="YlGnBu",
-            show=make_heatmaps,
-            save_directory=save_directory,
-        )
-    if not num_nom_empty:
-        plot_corr_heatmap(
-            corr_matrix_numerical_numerical,
-            title="Comparison Numerical vs. Numerical via Pearson-r",
-            vmin=0,
-            vmax=1,
-            center=0,
-            cmap="coolwarm",
-            show=make_heatmaps,
-            save_directory=save_directory,
-        )
-    if not nom_nom_empty:
-        plot_corr_heatmap(
-            corr_matrix_nominal_nominal,
-            title="Comparison Nominal vs. Nominal via Cramer's V",
-            vmin=0,
-            vmax=1,
-            center=0,
-            cmap="coolwarm",
-            show=make_heatmaps,
-            save_directory=save_directory,
-        )
+    if make_heatmaps:
+        if not num_num_empty:
+            plot_corr_heatmap(
+                corr_matrix_numerical_nominal,
+                title="Comparison Numerical vs. Nominal via ANOVA",
+                vmin=0.001,
+                vmax=0.1,
+                center=0.05,
+                cmap="YlGnBu",
+                show=make_heatmaps,
+                save_directory=save_directory,
+            )
+        if not num_nom_empty:
+            plot_corr_heatmap(
+                corr_matrix_numerical_numerical,
+                title="Comparison Numerical vs. Numerical via Pearson-r",
+                vmin=0,
+                vmax=1,
+                center=0,
+                cmap="coolwarm",
+                show=make_heatmaps,
+                save_directory=save_directory,
+            )
+        if not nom_nom_empty:
+            plot_corr_heatmap(
+                corr_matrix_nominal_nominal,
+                title="Comparison Nominal vs. Nominal via Cramer's V",
+                vmin=0,
+                vmax=1,
+                center=0,
+                cmap="coolwarm",
+                show=make_heatmaps,
+                save_directory=save_directory,
+            )
 
     # ! Remove highly correlated variables
     # Loop through every variable and remove it if it is highly correlated with another variable
@@ -3225,208 +2134,6 @@ def remove_correlation_based_on_vi(
 
     # ! Return the final variables
     return final_variables
-
-
-# -----------------------------------------------------------------------------------------------
-def ___REGRESSION___():
-    pass
-
-
-def run_rf_regression(
-    Xy=None,
-    user_input=None,
-    var_ohe_dict=None,
-    return_vi_from_all_data_model=False,
-    cv_folds=5,
-    # cv_repeats=1,
-    nestimators=150,
-    verbose=True,
-    return_eval=True,
-    Xy_train=None,
-    Xy_test=None,
-    best_params=None,
-    save_directory=None,
-):
-
-    # ! Build model ----------------------------------------------------------------
-    if best_params is None:
-        model = RandomForestRegressor(
-            n_estimators=nestimators,
-            random_state=user_input["seed_nr"],
-            n_jobs=-1,
-        )
-    else:
-        model = RandomForestRegressor(
-            n_estimators=best_params["n_estimators"],
-            max_features=best_params["max_features"],
-            max_depth=best_params["max_depth"],
-            criterion=best_params["criterion"],
-            random_state=user_input["seed_nr"],
-            n_jobs=-1,
-        )
-
-    # ! Option to train model on all data, no CV (to get feature importance for REF-CV)
-    # The difference is simply that there is no train-test split before oversampling.
-    if return_vi_from_all_data_model:
-
-        # Impute all NAs as -9999
-        # (should already happen outside, just making sure here)
-        Xy = Xy.fillna(-9999)
-
-        # Get stratification variable
-        stratify_by = Xy["test_train_strata"]
-
-        # Split into response and predictors
-        X = Xy.drop(columns=["target", "test_train_strata"], errors="ignore")
-        y = Xy["target"]
-
-        # Train
-        model.fit(
-            X, y, sample_weight=get_weights_from_y(y, user_input["weight_method"])
-        )
-
-        # Variable Importance
-        df_vi = assessing_top_predictors(
-            rf_in=model,
-            ignore_these=["target", "test_train_strata"],
-            X_train_in=X,
-            dict_ohe_in=var_ohe_dict,
-            with_aggregation=True,
-            n_predictors=None,
-            verbose=verbose,
-        )
-
-        return df_vi
-
-    # ! Split data and run CV -------------------------------------------------------
-    if Xy is not None:
-
-        # Impute all NAs as -9999
-        # (should already happen outside, just making sure here)
-        Xy = Xy.fillna(-9999)
-
-        # Get stratification variable
-        stratify_by = Xy["test_train_strata"]
-
-        # Split into response and predictors
-        X = Xy.drop(columns=["target", "test_train_strata"], errors="ignore")
-        y = Xy["target"]
-
-        # Split into train and test
-        X_train, X_test, y_train, y_test = train_test_split(
-            X,
-            y,
-            stratify=stratify_by,
-            test_size=user_input["test_split"],
-            random_state=user_input["seed_nr"],
-        )
-
-    else:
-        if (Xy_train is None) or (Xy_test is None):
-            raise ValueError(
-                "If no Xy is given, then Xy_train and Xy_test must be given!"
-            )
-
-        # Impute all NAs as -9999
-        Xy_train = Xy_train.fillna(-9999)
-        Xy_test = Xy_test.fillna(-9999)
-
-        # Get stratification variable
-        stratify_by = Xy_train["test_train_strata"]
-
-        # Split into response and predictors
-        X_train = Xy_train.drop(
-            columns=["target", "test_train_strata"], errors="ignore"
-        )
-        y_train = Xy_train["target"]
-
-        X_test = Xy_test.drop(columns=["target", "test_train_strata"], errors="ignore")
-        y_test = Xy_test["target"]
-
-    # Create Stratified K-fold cross validation
-    # ! Note:
-    # - Stratified K-fold is implemented in sklearn only for classification tasks to ensure
-    # equal distribution of the target levels. For regression, random sampling suffices to
-    # ensure equal distribution, so there is no additional stratification needed.
-    # To ensure stratification by a specific variable, one would need to implement a new
-    # function that does this manually.
-    # - It is kinda implemented above for merging stratification levels with too few observations.
-    # - Also there is no repeated option for KFold in sklearn, so this is not implemented here either.
-
-    cv = KFold(
-        n_splits=cv_folds,
-        random_state=user_input["seed_nr"],
-        shuffle=True,
-    )
-
-    # Set Scores for Cross-Validation
-    scoring = {
-        "r2": "r2",
-        "mae": "neg_mean_absolute_error",
-        "mse": "neg_mean_squared_error",
-        "rmse": "neg_root_mean_squared_error",
-    }
-
-    # Do CV
-    scores = cross_validate(
-        model,
-        X_train,
-        y_train,
-        scoring=scoring,
-        cv=cv,
-        n_jobs=-1,
-        params={
-            "sample_weight": get_weights_from_y(y_train, user_input["weight_method"])
-        },
-    )
-
-    if verbose:
-        print("\n--- CV Results ---")
-        for key in scores.keys():
-            mean = np.mean(scores[key])
-            std = np.std(scores[key])
-
-            # sklaern defines higher values as better. So, errors are taken as negatives to be as close to 0
-            # as possible. Therefore, we need to flip the mean for the errors.
-            if key in ["test_mae", "test_mse", "test_rmse"]:
-                mean = -mean
-            print(f" - {key}: \t\t{round(mean,2)} +/- {round(std,2)}")
-
-    # Train
-    model.fit(
-        X_train,
-        y_train,
-        sample_weight=get_weights_from_y(y_train, user_input["weight_method"]),
-    )
-
-    # Test
-    if return_eval:
-        model_evaluation_regression(
-            model,
-            X_train,
-            y_train,
-            X_test,
-            y_test,
-            save_directory=save_directory,
-            verbose=True,
-        )
-
-    # Variable Importance
-    df_vi = assessing_top_predictors(
-        rf_in=model,
-        ignore_these=["target", "test_train_strata"],
-        X_train_in=X_train,
-        dict_ohe_in=var_ohe_dict,
-        with_aggregation=True,
-        # n_predictors=show_top_n,
-        verbose=False,
-        save_directory=save_directory,
-    )
-
-    # Produce PDPs
-    # todo
-
-    return model, scores, df_vi
 
 
 def add_vars_to_dict(dataset, df, dict, verbose=False):
@@ -3514,223 +2221,3464 @@ def find_var_in_dict(var, dict):
     return cat
 
 
+        
+def ___RF_ANALYSIS___():
+    pass
+
+# ---------------------------------------------------------------------------
+def load_shap(filepath):
+    # Load the explainer object
+    with open(filepath, "rb") as file:
+        loaded_explainer = pickle.load(file)
+    return loaded_explainer
+
+# ---------------------------------------------------------------------------
+def get_relevant_feature(df, species, dataset):
+    feature = df.query("subset_group == @species")[f"{dataset} - Metrics"].values[0]
+
+    if str(feature) == "nan":
+        return None
+    else:
+        return ast.literal_eval(feature)[0]
+    
+def get_relevant_category(df, species, dataset):
+    feature = df.query("subset_group == @species")[f"{dataset} - Metrics"].values[0]
+
+    if str(feature) == "nan":
+        return None
+    else:
+        return ast.literal_eval(feature)[0]
+    
+def display_fig(path):
+    if not os.path.exists(path):
+        raise ValueError(f"🟥 Figure not found: {path}")
+    print(path)
+    display(Image(path))
+    
+def get_relevant_figs(df, species):
+    # Get directory
+    i_dir = df.query("subset_group == @species").loc[:, "dir"].values[0]
+
+    # Load figure
+    display(pd.read_csv(f"{i_dir}/roc_auc.csv"))
+    display_fig(f"{i_dir}/fig-vip-shap-by_feature.png")
+    display_fig(f"{i_dir}/fig-vip-impurity-aggregated.png")
+    display_fig(f"{i_dir}/fig-vip-permutation-aggregated.png")
+    display_fig(f"{i_dir}/fig_shap_scatter.png")
+    display_fig(f"{i_dir}/fig-roc_auc_curves.png")
+    display_fig(f"{i_dir}/fig_model_evaluation_test.png")
+
+# ---------------------------------------------------------------------------
+def plot_shap_response_interaction(
+    df,
+    response,
+    interaction,
+    dir_analysis=None,
+    remove_labels=False,
+    show=True,
+    filesuffix="",
+):
+    # Clean the dataset so that all rows where response or interaction are na are removed
+    remove_these = []
+    for species in df["subset_group"].values:
+
+        check1 = get_relevant_feature(df, species, response)
+        check2 = get_relevant_feature(df, species, interaction)
+        if check1 is None or check2 is None:
+            remove_these.append(species)
+
+    # if len(remove_these) > 0:
+    #     print(
+    #         f" - For {response} ~ {interaction}, the following species are removed due to missing features: {remove_these}"
+    #     )
+
+    df_plot = df.query("subset_group not in @remove_these")
+
+    # Inputs
+    unique_species = df_plot["subset_group"].unique()
+    n_species = len(unique_species)
+    if n_species > 20:
+        n_cols = 6
+        figx=25
+    else:
+        n_cols = 4
+        figx = 15
+        
+    n_rows = (n_species + n_cols - 1) // n_cols  # Calculate the number of rows needed
+
+    if n_species <= n_cols:
+        fig, axs = plt.subplots(
+            n_rows, n_cols, figsize=(figx, 4), sharey=False, sharex=False
+        )
+    elif remove_labels:
+        fig, axs = plt.subplots(
+            n_rows, n_cols, figsize=(figx, 2 * n_rows), sharey=False, sharex=False
+        )
+    else:
+        fig, axs = plt.subplots(
+            n_rows, n_cols, figsize=(figx, 3 * n_rows), sharey=False, sharex=False
+        )
+
+    for idx, species in enumerate(unique_species):
+
+        # Verbose
+        # print(
+        #     f" - Plotting species {species} ({idx + 1}/{n_species}) \t\t |{feat_response} \t| {feat_interaction}"
+        # )
+
+        # Get subplot
+        row = idx // n_cols
+        col = idx % n_cols
+
+        # Get features to plot
+        feat_response = get_relevant_feature(df_plot, species, response)
+        feat_interaction = get_relevant_feature(df_plot, species, interaction)
+
+        # Load SHAP data
+        filepath = df_plot.query("subset_group == @species")["dir"].values[0]
+        shap_values = load_shap(filepath + "/shap_values_test.pkl")
+
+        # Plot SHAP values
+        if n_species > n_cols:
+            ax = axs[row, col]
+        else:
+            ax = axs[col]
+            
+        shap.plots.scatter(
+            shap_values[:, feat_response][:, 1],
+            x_jitter=0,
+            alpha=0.5,
+            dot_size=10,
+            color=shap_values[:, feat_interaction][:, 1],
+            ax=ax,
+            show=False,
+        )
+
+        ax.set_title(f"{species}", weight="bold")
+        ax.set_xlabel(feat_response)
+        ax.set_ylabel("SHAP Value")
+
+        # If interaction is Carrying Capacity, overwrite coloring to go from 0 to 2+
+        if interaction == "Carrying Capacity":
+            ax.collections[0].set_clim(0, 2)
+            ax.collections[0].colorbar.set_ticks([0, 1, 2])
+            ax.collections[0].colorbar.set_ticklabels(["0", "1", "2"])
+
+        if remove_labels:
+            ax.set_xlabel("")
+            ax.set_ylabel("")
+            ax.set_xticks([])
+            ax.set_yticks([])
+
+            # Remove entire colorbar
+            ax.collections[0].colorbar.remove()
+
+    # Remove empty subplots if n_species is not a multiple of n_cols
+    for i in range(n_species, n_rows * n_cols):
+        fig.delaxes(axs.flatten()[i])
+
+    # Give plot a title
+    fig.suptitle(
+        f"SHAP Scatterplot for {response} and {interaction}\n\n",
+        fontsize=20,
+        weight="bold",
+    )
+
+    plt.tight_layout()
+
+    dir_analysis = dir_analysis + "/shap_interactions_1d"
+    if not os.path.exists(dir_analysis):
+        os.makedirs(dir_analysis)
+    plt.savefig(
+        f"{dir_analysis}/shap_scatterplot_{response}-{interaction}_no-labels-{remove_labels}{filesuffix}.png"
+    )
+    if show:
+        plt.show()
+    else:
+        plt.close()
+        
+# ---------------------------------------------------------------------------
+def plot_shap_interaction2(
+    df,
+    response,
+    interaction,
+    dir_analysis=None,
+    remove_labels=False,
+    show=True,
+    filesuffix="",
+    make_fig=True,
+):
+    
+    # Make sure the directory exists
+    dir_analysis = dir_analysis + "/shap_interactions_2d"
+    os.makedirs(dir_analysis, exist_ok=True)
+    
+    # Clean the dataset so that all rows where response or interaction are na are removed
+    remove_these = []
+    for species in df["subset_group"].values:
+
+        check1 = get_relevant_feature(df, species, response)
+        check2 = get_relevant_feature(df, species, interaction)
+        if check1 is None or check2 is None:
+            remove_these.append(species)
+
+    # print(
+    #     f" - For {response} ~ {interaction}, the following species are removed due to missing features: {remove_these}"
+    # )
+
+    df_plot = df.query("subset_group not in @remove_these")
+
+    # Inputs
+    df_modelfits=[]
+    unique_species = df_plot["subset_group"].unique()
+    n_species = len(unique_species)
+    if n_species > 20:
+        n_cols = 6
+        figx=25
+    else:
+        n_cols = 4
+        figx = 15
+    n_rows = (n_species + n_cols - 1) // n_cols  # Calculate the number of rows needed
+
+    if make_fig:
+        if n_species <= n_cols:
+            fig, axs = plt.subplots(
+                n_rows, n_cols, figsize=(figx, 4), sharey=False, sharex=False
+            )
+        elif remove_labels:
+            fig, axs = plt.subplots(
+                n_rows, n_cols, figsize=(figx, 2 * n_rows), sharey=False, sharex=False
+            )
+        else:
+            fig, axs = plt.subplots(
+                n_rows, n_cols, figsize=(figx, 3 * n_rows), sharey=False, sharex=False
+            )
+        
+
+    for idx, species in enumerate(unique_species):
+
+        # Verbose
+        # print(
+        #     f" - Plotting species {species} ({idx + 1}/{n_species}) \t\t |{feat_response} \t| {feat_interaction}"
+        # )
+
+        # Get subplot
+        row = idx // n_cols
+        col = idx % n_cols
+
+        # Get features to plot
+        feat_response = get_relevant_feature(df_plot, species, response)
+        feat_interaction = get_relevant_feature(df_plot, species, interaction)
+        
+        # Load SHAP data
+        filepath = df_plot.query("subset_group == @species")["dir"].values[0]
+        shap_values = load_shap(filepath + "/shap_values_interaction_test.pkl")
+        X_shap = pd.read_feather(f"{filepath}/X_shap_test.feather")
+        feature_names = pd.Series(X_shap.columns)
+
+        # Get values for target == 1
+        shap_values = shap_values[:, :, :, 0]
+
+        # Get values for features
+        feat_response_values = X_shap[feat_response].values
+        feat_interaction_values = X_shap[feat_interaction].values
+
+        pos_response = feature_names[feature_names == feat_response].index[0]
+        pos_interaction = feature_names[feature_names == feat_interaction].index[0]
+
+        # Get interaction values for the two features
+        shap_values = shap_values[:, pos_response, pos_interaction]
+        
+        # Normalize all values
+        from sklearn.preprocessing import MinMaxScaler
+        scaler = MinMaxScaler()
+        feat_response_values = scaler.fit_transform(feat_response_values.reshape(-1, 1)).flatten()
+        feat_interaction_values = scaler.fit_transform(feat_interaction_values.reshape(-1, 1)).flatten()
+        shap_values = scaler.fit_transform(shap_values.reshape(-1, 1)).flatten()
+        
+        # Inverse SPEI scale to make easier to interpret
+        if response == "SPEI":
+            feat_response_values = 1 - feat_response_values
+
+        # Get 5 and 95 percentiles for coloring
+        # ! Debug: setting from 0 - 1 because of the normalization
+        # shap_values_5 = np.percentile(shap_values, 5)
+        # shap_values_95 = np.percentile(shap_values, 95)
+        shap_values_5 = 0
+        shap_values_95 = 1
+        
+        # Find best fitting model using quadratic lm and interactions
+        X = pd.DataFrame({response: feat_response_values, interaction: feat_interaction_values})
+        y = shap_values
+        modelfit = stepwise_regression(X, y, species)
+        df_modelfits.append(modelfit)
+
+        # Plot interaction
+        if make_fig:
+            if n_species > n_cols:
+                ax = axs[row, col]
+            else:
+                ax = axs[col]
+
+            if response == "Tree Size" or interaction == "Tree Size":
+                cmap = plt.colormaps["viridis_r"]
+                edgecol = "black"
+            else:
+                cmap = plt.colormaps["magma_r"]
+                # edgecol = None
+                edgecol = "black"
+
+            scatter = ax.scatter(
+                x=feat_response_values,
+                y=feat_interaction_values,
+                c=shap_values,
+                cmap=cmap,
+                edgecolors=edgecol,
+                linewidths=0.5,
+                alpha=0.9,
+                s=40,
+            )
+            ax.set_xlabel(feat_response)
+            ax.set_ylabel(feat_interaction)
+            ax.set_title(f"{species}", weight="bold")
+            # Add colorbar, centered at 0
+            fig.colorbar(scatter, ax=ax, label=f"SHAP Value")
+            # absolute_max = np.abs(shap_values).max()
+            # scatter.set_clim(-absolute_max, absolute_max)
+            # No spines
+            ax.spines["top"].set_visible(False)
+            ax.spines["right"].set_visible(False)
+
+            # If interaction is Carrying Capacity, overwrite coloring to go from 0 to 2+
+            if interaction == "Carrying Capacity":
+                scatter.set_clim(0, 1.5)
+                scatter.colorbar.set_ticks([0, 0.5, 1, 1.5])
+                scatter.colorbar.set_ticklabels(["0", "0.5", "1", "1.5"])
+            else:
+                scatter.set_clim(shap_values_5, shap_values_95)
+
+            if remove_labels:
+                ax.set_xlabel("")
+                ax.set_ylabel("")
+                ax.set_xticks([])
+                ax.set_yticks([])
+
+                # Remove entire colorbar
+            ax.collections[0].colorbar.remove()
+
+    if make_fig:
+        # Remove empty subplots if n_species is not a multiple of n_cols
+        for i in range(n_species, n_rows * n_cols):
+            fig.delaxes(axs.flatten()[i])
+        # Give plot a title
+        fig.suptitle(
+            f"SHAP Interaction of {response} and {interaction}\n\n",
+            fontsize=20,
+            weight="bold",
+        )
+        plt.tight_layout()
+        plt.savefig(
+            f"{dir_analysis}/{response}-{interaction}_no-labels-{remove_labels}{filesuffix}.png"
+        )
+        if show:
+            plt.show()
+        else:
+            plt.close()
+    else:
+        print("🚨 No plots were made because 'make_fig = False' in plot_shap_interaction2()!")
+        
+    # Save model fits df
+    pd.DataFrame(df_modelfits).to_csv(f"{dir_analysis}/{response}-{interaction}_model_fits{filesuffix}.csv", index=False)
+
+# ----------------------------------
+def plot_shap_response(
+    df,
+    response,
+    scale_shap=True,
+    scale_response=True,
+    remove_labels=False,
+    dir_analysis=None,
+    show=True,
+    filesuffix="",
+    make_fig=True,
+):
+    
+    # Make dir
+    dir_analysis = dir_analysis + "/shap_single"
+    os.makedirs(dir_analysis, exist_ok=True)
+            
+    
+    # Clean the dataset so that all rows where response is na are removed
+    remove_these = []
+    for species in df["subset_group"].values:
+
+        check1 = get_relevant_feature(df, species, response)
+        if check1 is None:
+            remove_these.append(species)
+
+    # print(
+    #     f" - For {response}, the following species are removed due to missing features: {remove_these}"
+    # )
+
+    df_plot = df.query("subset_group not in @remove_these")
+
+    # Inputs
+    df_modelfits = []
+    unique_species = df_plot["subset_group"].unique()
+    n_species = len(unique_species)
+    if n_species > 20:
+        n_cols = 6
+        figx=25
+    else:
+        n_cols = 4
+        figx = 15
+    n_rows = (n_species + n_cols - 1) // n_cols  # Calculate the number of rows needed
+
+    if make_fig:
+        if n_species <= n_cols:
+            fig, axs = plt.subplots(
+                n_rows, n_cols, figsize=(figx, 4), sharey=False, sharex=False
+            )
+        elif remove_labels:
+            fig, axs = plt.subplots(
+                n_rows, n_cols, figsize=(figx, 2 * n_rows), sharey=False, sharex=False
+            )
+        else:
+            fig, axs = plt.subplots(
+                n_rows, n_cols, figsize=(figx, 3 * n_rows), sharey=False, sharex=False
+            )
+                    
+    for idx, species in enumerate(unique_species):
+
+        # Verbose
+        # print(
+        #     f" - Plotting species {species} ({idx + 1}/{n_species}) \t\t |{feat_response}}"
+        # )
+        
+        # Get subplot
+        row = idx // n_cols
+        col = idx % n_cols
+
+        # Get features to plot
+        feat_response = get_relevant_feature(df_plot, species, response)
+
+        # Load SHAP data (using new code in the backend)
+        filepath = df_plot.query("subset_group == @species")["dir"].values[0]
+        shap_values = load_shap(filepath + "shap/approximated/shap_values_test.pkl")
+        X_shap = pd.read_csv(f"{filepath}/final_model/X_test.csv", index_col=0)
+        feature_names = pd.Series(X_shap.columns)
+
+        # Get values for feature
+        feat_response_values = X_shap[feat_response].values
+        pos_response = feature_names[feature_names == feat_response].index[0]
+        shap_values = shap_values[:, pos_response, 1].values
+        
+        # Scale feature and shap values
+        from sklearn.preprocessing import MinMaxScaler
+        scaler = MinMaxScaler()
+        if scale_response:
+            feat_response_values = scaler.fit_transform(feat_response_values.reshape(-1, 1)).flatten()
+            
+            # Inverse SPEI scale to make easier to interpret
+            if response == "SPEI":
+                feat_response_values = 1 - feat_response_values
+        else:
+            # Inverse SPEI scale to make easier to interpret
+            if response == "SPEI":
+                feat_response_values = -feat_response_values
+                
+        if scale_shap:
+            shap_values = scaler.fit_transform(shap_values.reshape(-1, 1)).flatten()
+        
+        # Get LM for direction of response
+        from sklearn.linear_model import LinearRegression
+        from sklearn.preprocessing import PolynomialFeatures
+        
+        X = pd.DataFrame(feat_response_values)
+        y = pd.Series(shap_values)
+        
+        # ! Fit linear, quadratic, and log-transformed models
+        
+        
+        # Fit linear model
+        lin_lm = LinearRegression()
+        lin_lm.fit(X, y)
+        
+        # Get coefficients
+        lin_pred = lin_lm.predict(X)
+        lin_r2 = lin_lm.score(X, y)
+        lin_rmse = np.sqrt(np.mean((lin_pred - y) ** 2))
+        
+        # -- Code to get pval --
+        warnings.filterwarnings("ignore", category=DeprecationWarning)
+        warnings.filterwarnings("ignore", category=FutureWarning)
+
+        # Calculate residuals
+        residuals = y - lin_pred
+        n_samples = X.shape[0]
+
+        # Calculate standard errors
+        rss = np.sum(residuals ** 2)
+        rse = np.sqrt(rss / (n_samples - 2))  # Degrees of freedom: n - 2
+        se_slope = rse / np.sqrt(np.sum((X - np.mean(X)) ** 2))
+
+        # Get t-statistic for the slope
+        slope = lin_lm.coef_[0]
+        t_stat = slope / se_slope
+        lin_pval = 2 * (1 - stats.t.cdf(np.abs(t_stat), df=n_samples - 2))
+        lin_pval = lin_pval[0]
+        # -- Code to get pval --
+        
+        # Quadratic Model
+        quad = PolynomialFeatures(degree=2)
+        quad_X = quad.fit_transform(X)
+        quad_lm = LinearRegression()
+        quad_lm.fit(quad_X, y)
+        quad_pred = quad_lm.predict(quad_X)
+        quad_r2 = quad_lm.score(quad_X, y)
+        quad_rmse = np.sqrt(np.mean((quad_pred - y) ** 2))
+        
+        # Calculate AIC by
+        lin_aic = calculate_aic_from_fitted_model(lin_lm, X, y)
+        quad_aic = calculate_aic_from_fitted_model(quad_lm, quad_X, y)
+        
+        # Set solid linetype
+        linetype = "solid"
+        
+        # if lin_r2 > quad_r2:
+        if True or lin_aic < quad_aic:
+            
+            pred = lin_pred
+            equation = f"{lin_lm.coef_[0]:.2f}x + {lin_lm.intercept_:.2f} | R² = {lin_r2:.2f} | p = {lin_pval:.2f}"
+            
+            # Make line dotted if not significant
+            if lin_pval > 0.05:
+                linetype = "dotted"
+            
+            idf = pd.DataFrame(
+                {
+                    "species": species,
+                    "model": "linear",
+                    "coef_1": lin_lm.coef_[0],
+                    "coef_2": 0,
+                    "intercept": lin_lm.intercept_,
+                    "r2": lin_r2,
+                    "rmse": lin_rmse,
+                    "pval_1" : lin_pval,
+                }, index=[0]
+            )
+            
+        else:
+            pred = quad_pred
+            equation = f"{quad_lm.coef_[1]:.2f}x + {quad_lm.coef_[2]:.2f}x² + {quad_lm.intercept_:.2f} | R² = {quad_r2:.2f}"
+            idf = pd.DataFrame(
+                {
+                    "species": species,
+                    "model": "quadratic",
+                    "coef_1": quad_lm.coef_[1],
+                    "coef_2": quad_lm.coef_[2],
+                    "intercept": quad_lm.intercept_,
+                    "r2": quad_r2,
+                    "rmse": quad_rmse,
+                    "pval_1" : "todo",
+                }, index=[0]
+            )
+        
+        # Append to list
+        df_modelfits.append(idf)
+        
+        # ! START PLOT -----------------------------------------------------------
+        if make_fig:
+            # Remove predictions below 0 because shown data is scaled to 0
+            if scale_shap:
+                pred[pred < 0] = np.nan
+                
+            # Plot SHAP values
+            if response == "SPEI":
+                # color = "gold"
+                color = "Greens"
+            elif response == "Temperature":
+                color = "Oranges"
+            else:
+                color = "grey"
+            
+            if n_species > n_cols:
+                ax = axs[row, col]
+            else:
+                ax = axs[col]
+
+            # Add scatter
+            # scatter = ax.scatterx.scatter(
+            #     x=feat_response_values,
+            #     y=shap_values,
+            #     edgecolors="black"black",
+            #     color=colorr,
+            #     linewidths=0.15
+            #     alpha=0.5,
+            #     s=20=0.5,
+            #     s=20,
+            # )
+            
+            # Create 2D density plot
+            sns.kdeplot(
+                x=feat_response_values,
+                y=shap_values,
+                cmap=color,
+                fill=True,
+                ax=ax,
+            )
+            
+            # Add lm line
+            df_lm = pd.DataFrame({"x": X[0], "y": pred}).sort_values("x")
+            # display(df_lm)
+            ax.plot(df_lm["x"], df_lm["y"], color="red", linewidth=1, linestyle=linetype)
+            
+            # Add lm equation
+            ax.text(
+                0.5,
+                0.1,
+                equation,
+                transform=ax.transAxes,
+                fontsize=10,
+                fontweight="bold",
+                verticalalignment="bottom",
+                horizontalalignment="center",
+                color="red",
+            )
+            
+            # Add layout
+            ylabel = "SHAP Value"
+            xlabel = feat_response
+            
+            if scale_shap:
+                ylabel = "Scaled SHAP Value"
+                
+            if scale_response:
+                xlabel = "Scaled " + xlabel
+            else:
+                xlabel = "Original " + xlabel    
+                if response == "SPEI":
+                    xlabel =  xlabel + (" (mirrored by taking negative)")
+            
+            
+            ax.set_xlabel(xlabel)
+            ax.set_ylabel(ylabel)
+            ax.set_title(f"{species}", weight="bold")
+            ax.spines["top"].set_visible(False)
+            ax.spines["right"].set_visible(False)
+
+            if remove_labels:
+                ax.set_xlabel("")
+                ax.set_ylabel("")
+                ax.set_xticks([])
+                ax.set_yticks([])
+
+    if make_fig:
+        # Remove empty subplots if n_species is not a multiple of n_cols
+        for i in range(n_species, n_rows * n_cols):
+            fig.delaxes(axs.flatten()[i])
+
+        # Give plot a title
+        fig.suptitle(
+            f"SHAP Scatterplot for {response}\n\n",
+            fontsize=20,
+            weight="bold",
+        )
+
+        plt.tight_layout()
+        plt.savefig(
+            f"{dir_analysis}/{response}_no-labels-{remove_labels}{filesuffix}.png"
+        )
+        if show:
+            plt.show()
+        else:
+            plt.close()
+    else:
+        print("🚨 No plots were made because 'make_fig = False' in plot_shap_response()!")
+    
+            
+    # Save model fits df
+    df_modelfits = pd.concat(df_modelfits, axis=0)
+    # Add suffix if filesuffix is not empty
+    if filesuffix != "":
+        df_modelfits["suffix"] = filesuffix
+    # Save it
+    pd.DataFrame(df_modelfits).to_csv(f"{dir_analysis}/{response}_model_fits{filesuffix}.csv", index=False)
+    
+    
+def calculate_aic_from_fitted_model(model, X, y):
+    """
+    Calculate the Akaike Information Criterion (AIC) for a fitted linear regression model.
+
+    Parameters:
+    model (sklearn.base.RegressorMixin): The fitted model.
+    X (np.ndarray): The input feature matrix.
+    y (np.ndarray): The target vector.
+
+    Returns:
+    float: The AIC value.
+    """
+    # Number of parameters (including the intercept)
+    k = X.shape[1] + 1  # number of features + intercept
+
+    # Calculate the RSS (Residual Sum of Squares)
+    y_pred = model.predict(X)
+    rss = np.sum((y - y_pred) ** 2)
+
+    # Number of data points
+    n = X.shape[0]
+
+    # Calculate the AIC
+    aic = n * np.log(rss / n) + 2 * k
+
+    return aic
+
+
+def stepwise_regression(X, y, species):
+    """
+    Perform stepwise regression on polynomial features including interaction terms.
+    
+    Parameters:
+    X (pd.DataFrame): Input features with exactly two columns.
+    y (pd.Series or np.array): Target variable.
+
+    Returns:
+    pd.DataFrame: DataFrame containing model details and coefficients.
+    """
+    import numpy as np
+    import pandas as pd
+    from sklearn.preprocessing import PolynomialFeatures
+    from sklearn.linear_model import LinearRegression
+    from sklearn.feature_selection import SequentialFeatureSelector
+    from sklearn.metrics import r2_score, mean_squared_error
+    
+    # Check if X has exactly two columns
+    if X.shape[1] != 2:
+        raise ValueError("X must have exactly two columns.")
+
+    # Preserve the column names
+    col_names = X.columns
+    
+    # Generate polynomial features up to degree 2
+    poly = PolynomialFeatures(degree=2, include_bias=False)
+    X_poly = poly.fit_transform(X)
+    
+    # Column names for reference
+    poly_features = poly.get_feature_names_out(col_names)
+    
+    # Manually add interaction terms if necessary
+    if f"{col_names[0]} {col_names[1]}" not in poly_features:
+        interaction_term = (X.iloc[:, 0] * X.iloc[:, 1]).values.reshape(-1, 1)
+        X_poly = np.hstack((X_poly, interaction_term))
+
+    if f"{col_names[0]}^2 {col_names[1]}^2" not in poly_features:
+        quadratic_interaction_term = (X.iloc[:, 0] ** 2 * X.iloc[:, 1] ** 2).values.reshape(-1, 1)
+        X_poly = np.hstack((X_poly, quadratic_interaction_term))
+    
+    # Update feature names after adding custom interaction terms
+    updated_feature_names = list(poly_features)
+    if f"{col_names[0]} {col_names[1]}" not in poly_features:
+        updated_feature_names.append(f"{col_names[0]} {col_names[1]}")
+    if f"{col_names[0]}^2 {col_names[1]}^2" not in poly_features:
+        updated_feature_names.append(f"{col_names[0]}^2 {col_names[1]}^2")
+    
+    # Convert to DataFrame
+    X_poly_df = pd.DataFrame(X_poly, columns=updated_feature_names)
+    
+    # Perform stepwise regression using SequentialFeatureSelector
+    estimator = LinearRegression()
+    sfs = SequentialFeatureSelector(estimator, n_features_to_select="auto", direction='forward', cv=5)
+    sfs.fit(X_poly_df, y)
+    
+    # Get selected features
+    selected_features = X_poly_df.columns[sfs.get_support()].tolist()
+    
+    # Ensure the selected features are valid
+    X_poly_selected = X_poly_df[selected_features]
+    
+    # Fit the final model
+    final_model = LinearRegression()
+    final_model.fit(X_poly_selected, y)
+    
+    # Calculate metrics
+    y_pred = final_model.predict(X_poly_selected)
+    r2 = r2_score(y, y_pred)
+    rmse = np.sqrt(mean_squared_error(y, y_pred))
+    
+    # Create a dictionary to store the coefficients
+    model_dict = {
+        "species": species,
+        "intercept": final_model.intercept_,
+        "r2": r2,
+        "rmse": rmse,
+    }
+    
+    # Add all possible coefficient names, setting to 0 if not included in the final model
+    for feature in updated_feature_names:
+        if feature in selected_features:
+            model_dict[f"{feature}"] = final_model.coef_[selected_features.index(feature)]
+        else:
+            model_dict[f"{feature}"] = 0
+    
+    return model_dict
+
+def turn_dictionary_into_df(dic):
+    lll = []
+
+    for k in dic.keys():
+        lll.append(pd.DataFrame({k: dic[k]}))
+
+    return pd.concat(lll, axis=1)
+
+
+def bootstrap_optimal_tss(
+    y_true,
+    y_pred_probs,
+    n_bootstraps=100,
+    random_state=42,
+    thresholds=np.linspace(0.0, 1.0, num=101),
+    show=False,
+):
+    # List to store bootstrapped TSS and specificity values for each threshold
+    tss_values = {threshold: [] for threshold in thresholds}
+    specificity_values = {threshold: [] for threshold in thresholds}
+
+    rng = np.random.RandomState(random_state)
+
+    for _ in range(n_bootstraps):
+        # Stratified Bootstrap sampling
+        y_true_boot, y_pred_probs_boot = resample(
+            y_true, y_pred_probs, replace=True, stratify=y_true, random_state=rng
+        )
+
+        for threshold in thresholds:
+            # Binary predictions at the current threshold
+            y_pred_boot = (y_pred_probs_boot >= threshold).astype(int)
+
+            # Confusion matrix components
+            tn, fp, fn, tp = confusion_matrix(y_true_boot, y_pred_boot).ravel()
+
+            # Calculate Sensitivity and Specificity
+            sensitivity = tp / (tp + fn)
+            specificity = tn / (tn + fp)
+
+            # Calculate TSS
+            tss = sensitivity + specificity - 1
+
+            # Append TSS and specificity to the corresponding threshold list
+            tss_values[threshold].append(tss)
+            specificity_values[threshold].append(specificity)
+
+    # Calculate mean and standard deviation for TSS and specificity at each threshold
+    tss_means = {threshold: np.mean(tss_values[threshold]) for threshold in thresholds}
+    tss_stds = {threshold: np.std(tss_values[threshold]) for threshold in thresholds}
+    specificity_means = {
+        threshold: np.mean(specificity_values[threshold]) for threshold in thresholds
+    }
+    specificity_stds = {
+        threshold: np.std(specificity_values[threshold]) for threshold in thresholds
+    }
+
+    # Find the threshold with the maximum mean TSS
+    optimal_threshold = max(tss_means, key=tss_means.get)
+    optimal_tss_mean = tss_means[optimal_threshold]
+    optimal_tss_std = tss_stds[optimal_threshold]
+    
+    optimal_specificity_mean = specificity_means[optimal_threshold]
+    optimal_specificity_std = specificity_stds[optimal_threshold]
+
+    if show:
+        # Plot TSS and specificity means
+        plt.figure(figsize=(12, 6))
+        plt.plot(thresholds, list(tss_means.values()), label="TSS (mean)", color="blue")
+        plt.plot(
+            thresholds,
+            list(specificity_means.values()),
+            label="Specificity (mean)",
+            color="green",
+        )
+        plt.axvline(
+            optimal_threshold,
+            color="red",
+            linestyle="--",
+            label=f"Optimal Threshold = {optimal_threshold:.2f}",
+        )
+        plt.fill_between(
+            thresholds,
+            [tss_means[threshold] - tss_stds[threshold] for threshold in thresholds],
+            [tss_means[threshold] + tss_stds[threshold] for threshold in thresholds],
+            color="blue",
+            alpha=0.2,
+        )
+        plt.fill_between(
+            thresholds,
+            [
+                specificity_means[threshold] - specificity_stds[threshold]
+                for threshold in thresholds
+            ],
+            [
+                specificity_means[threshold] + specificity_stds[threshold]
+                for threshold in thresholds
+            ],
+            color="green",
+            alpha=0.2,
+        )
+        plt.xlabel("Threshold")
+        plt.ylabel("Metric Value")
+        plt.title("TSS and Specificity across Thresholds")
+        plt.legend()
+        plt.grid(True)
+        plt.show()
+
+    return optimal_tss_mean, optimal_tss_std, {"optimal_threshold": optimal_threshold, "optimal_specificity_mean": optimal_specificity_mean, "optimal_specificity_std": optimal_specificity_std}
+
+
 # -----------------------------------------------------------------------------------------------
-def ___BACKUPS___():
+def ___RF_Response_Analysis___():
+    pass
+
+def aggregate_spei_temp_responses(my_species, df, roc_threshold=0.6):
+    # To be included, the ROC-AUC must be above the threshold
+    nrows_before = df.shape[0]
+    df = df[df["test_boot_mean"] > roc_threshold].copy()
+    nrows_after = df.shape[0]
+    if nrows_before != nrows_after:
+        print(
+            f"🚨 {my_species} - Runs with roc < {roc_threshold} were removed. From {nrows_before} to {nrows_after} runs"
+        )
+
+    # Attach importance ratio of SPEI to Temperature
+    df["imp_ratio_spei_temp"] = df["SPEI - Importance"] / df["Temperature - Importance"]
+    df["imp_ratio_spei_temp"] = df["imp_ratio_spei_temp"].round(1)
+    df["imp_sum_spei_temp"] = df["SPEI - Importance"] + df["Temperature - Importance"]
+
+    # Clean df
+    df = (
+        df[
+            [
+                "species",
+                "subset_group",
+                "test_boot_mean",
+                "SPEI - Metrics",
+                "Temperature - Metrics",
+                "imp_ratio_spei_temp",
+                "imp_sum_spei_temp",
+            ]
+        ]
+        .dropna()  # Todo
+        .reset_index(drop=True)
+    )
+
+    # Extract SPEI metrics
+    if str(df["SPEI - Metrics"].values[0]) == "nan":
+        df["SPEI - Metrics"] = "None"
+        df["SPEI - Duration"] = np.nan
+        df["SPEI - Season"] = np.nan
+        df["SPEI - Season back"] = np.nan
+        df["SPEI - Duration Agg."] = np.nan
+    else:
+        df["SPEI - Metrics"] = df["SPEI - Metrics"].apply(ast.literal_eval)
+        df["SPEI - Metrics"] = df["SPEI - Metrics"].apply(lambda x: x[0])
+        df["SPEI - Duration"] = df["SPEI - Metrics"].apply(
+            lambda x: x.split("spei")[1].split("-")[0]
+        )
+        df["SPEI - Duration"] = df["SPEI - Duration"].astype(int)
+        df["SPEI - Season"] = df["SPEI - Metrics"].apply(
+            lambda x: x.split("-")[1].split("_")[0]
+        )
+
+        # Rename seasons from month to season
+        df["SPEI - Season"] = df["SPEI - Season"].map(
+            {
+                "feb": "Winter",
+                "may": "Spring",
+                "aug": "Summer",
+                "nov": "Fall",
+            }
+        )
+
+        # Backcalculate SPEI season from duration
+        df["SPEI - Season back"] = ""
+        for i in range(df.shape[0]):
+            df.loc[i, "SPEI - Season back"] = backcalculate_season(
+                df.loc[i, "SPEI - Season"], df.loc[i, "SPEI - Duration"]
+            )
+
+        # Merge SPEI durations into short - medium - long
+        df["SPEI - Duration Agg."] = df["SPEI - Duration"].map(
+            {
+                1: "Short",
+                3: "Short",
+                6: "Short",
+                9: "Medium",
+                12: "Medium",
+                15: "Medium",
+                18: "Long",
+                21: "Long",
+                24: "Long",
+            }
+        )
+
+    # Extract Temperature metrics
+    if str(df["Temperature - Metrics"].values[0]) == "nan":
+        df["Temperature - Metrics"] = "None"
+        df["Temperature - Season"] = np.nan
+
+    else:
+        df["Temperature - Metrics"] = df["Temperature - Metrics"].apply(
+            ast.literal_eval
+        )
+        df["Temperature - Metrics"] = df["Temperature - Metrics"].apply(lambda x: x[0])
+        df["Temperature - Season"] = df["Temperature - Metrics"].apply(
+            lambda x: x.split("_")[1]
+        )
+
+        df["Temperature - Season"] = df["Temperature - Season"].map(
+            {
+                "win": "Winter",
+                "spr": "Spring",
+                "sum": "Summer",
+                "aut": "Fall",
+            }
+        )
+
+    # Truncate run name
+    df["performance"] = (
+        df["subset_group"]
+        .str.split(" ")
+        .str[1]
+        .str.replace("(", "")
+        .str.replace(")", "")
+    )
+    df["subset_group"] = (
+        df["subset_group"].str.split(" ").str[0].str.replace("run_", "")
+    )
+
+    # ! Group by species, season, and duration
+    grouping = [
+        "species",
+        "Temperature - Metrics",
+        "SPEI - Metrics",
+        # "Temperature - Season",
+        # "SPEI - Duration Agg.",
+        # "SPEI - Duration",
+        # "SPEI - Season",
+        # "SPEI - Season back",
+    ]
+
+    # Calculate the group sizes
+    group_sizes = df.groupby(grouping).size().reset_index(name="group_size")
+
+    # Aggregate the mean and std of 'test_boot_mean', and aggregate lists for the specified columns
+    df_agg = (
+        df.groupby(grouping)
+        .agg(
+            spei_durations=("SPEI - Duration", sorted_list),
+            spei_seasons_back=("SPEI - Season back", sorted_list),
+            spei_seasons=("SPEI - Season", sorted_list),
+            runs=("subset_group", sorted_list),
+            spei_metrics=("SPEI - Metrics", sorted_list),
+            temp_seasons=("Temperature - Season", sorted_list),
+            temp_metrics=("Temperature - Metrics", sorted_list),
+            imp_ratio_spei_temp_mean=("imp_ratio_spei_temp", "mean"),
+            imp_sum_spei_temp_mean=("imp_sum_spei_temp", "mean"),
+            performance_mean=("test_boot_mean", "mean"),
+            performance_std=("test_boot_mean", "std"),
+            # performances=("performance", sorted_list),
+        )
+        .reset_index()
+    )
+
+    # display(df_agg)
+
+    # Merge the group sizes with the aggregated DataFrame
+    df_merged = (
+        df_agg.merge(group_sizes, on=grouping)
+        .sort_values("group_size", ascending=False)
+        .reset_index(drop=True)
+    )
+
+    # Add percentage of total runs
+    df_merged["perc_runs"] = (
+        df_merged["group_size"] / df_merged["group_size"].sum() * 100
+    )
+    df_merged["perc_runs"] = df_merged["perc_runs"].astype(int)
+
+    df_merged["imp_ratio_spei_temp_mean"] = df_merged["imp_ratio_spei_temp_mean"].round(
+        2
+    )
+    df_merged["imp_sum_spei_temp_mean"] = df_merged["imp_sum_spei_temp_mean"].round(0)
+    df_merged["performance_mean"] = df_merged["performance_mean"].round(2)
+    df_merged["performance_std"] = df_merged["performance_std"].round(2)
+
+    # Result
+    df_merged = move_vars_to_front(df_merged, ["species", "group_size", "perc_runs"])
+    return df_merged, df
+
+
+# ! ---------------------------------------------------------------------
+def backcalculate_season(start, months):
+    # User input
+    valid_seasons = ["Winter", "Spring", "Summer", "Fall"]
+    # Make sure the number of months is a multiple of 3
+    if months == 1 or months == 3:
+        return start
+    elif months % 3 != 0:
+        raise ValueError("The number of months must be a multiple of 3.")
+
+    # Create a mapping from season name to index and vice versa
+    season_to_index = {season: i for i, season in enumerate(valid_seasons)}
+    index_to_season = {i: season for i, season in enumerate(valid_seasons)}
+
+    # Get the starting season's index
+    start_index = season_to_index[start]
+
+    # Calculate the number of seasons to go back
+    seasons_to_go_back = (months // 3) % 4 - 1
+
+    # Calculate the resulting season's index
+    final_index = (start_index - seasons_to_go_back) % 4
+
+    # Get the resulting season from the index
+    final_season = index_to_season[final_index]
+
+    return final_season
+
+
+# ! ---------------------------------------------------------------------
+
+
+def sorted_list(values):
+    return sorted(values.unique().tolist())
+
+
+def make_list(values):
+    return values.unique().tolist()
+
+
+# ! ---------------------------------------------------------------------
+
+
+def display_fig(path):
+    if not os.path.exists(path):
+        print(f"🟥 Figure not found: {path}")
+    else:
+        print(path)
+        display(Image(path))
+
+
+# ! ---------------------------------------------------------------------
+
+
+def x_get_figs(my_dir, species):
+    # Get dir
+    i_dir = f"{my_dir}/{species}"
+    display_fig(
+        f"{i_dir}/by_roc/shap_interactions_2d/SPEI-Temperature_no-labels-False-most_common_runs.png"
+    )
+    display_fig(f"{i_dir}/by_roc/shap_single/SPEI_no-labels-False-sorted_by_run.png")
+    display_fig(
+        f"{i_dir}/by_roc/shap_single/Temperature_no-labels-False-sorted_by_run.png"
+    )
+    display_fig(f"{i_dir}/by_roc/model_performance_sorted_by_test_boot_mean.png")
+    display_fig(
+        f"{i_dir}/by_roc/feature_importance-shap-by_feature-colored_relative_occurences.png"
+    )
+
+
+def round_half_up(n, decimals=0):
+    multiplier = 10**decimals
+    return math.floor(n * multiplier + 0.5) / multiplier
+
+
+def round_to_0_decimals(n, decimals=0):
+    for i in (np.arange(15, decimals, -1) - 1).tolist():
+        n = round_half_up(n, i)
+    return n
+
+
+# ! ----------------------------------------------------------------------------------------------------------------------------------
+def get_spei_table(
+    df,
+    select_change,
+    x_var,
+    y_var,
+    x_var_order,
+    y_var_order,
+    method_scaling_importance="sum",
+    round_decimals=False,
+):
+
+    # Get df
+    df = df.query("change == @select_change").copy().reset_index(drop=True)
+
+    # Option to level importance and give each species x pattern pair the same weight
+    if method_scaling_importance == "sum":
+        df["counts"] = df["group_size"]
+    elif method_scaling_importance == "scaled_all":
+        df["counts"] = df["group_size_rel_all"]
+    elif method_scaling_importance == "scaled_valid":
+        df["counts"] = df["group_size_rel_val"]
+
+    df_pivot = df.pivot_table(
+        index=y_var,
+        columns=x_var,
+        values="counts",
+        aggfunc="sum",
+        fill_value=0,
+    )
+
+    # Round accurately
+    df_pivot = df_pivot / df_pivot.sum().sum() * 100
+    if round_decimals:
+        df_pivot = df_pivot.map(round_to_0_decimals).astype(int)
+
+    # Ensure the y-axis goes from 1 to 25 and x-axis is in the order of 'feb', 'may', 'aug', 'nov'
+    df_pivot = df_pivot.reindex(
+        index=y_var_order,
+        columns=x_var_order,
+        fill_value=0,
+    )
+
+    # display(df_pivot)
+
+    return df_pivot
+
+
+# ! ----------------------------------------------------------------------------------------------------------------------------------
+def plot_bars(
+    df,
+    change,
+    x_var,
+    x_var_order,
+    y_var,
+    y_var_order,
+    ax=None,
+    ylim=None,
+    title=None,
+    method_scaling_importance="sum",
+):
+
+    # Get df
+    pivot_df = get_spei_table(
+        df=df,
+        select_change=change,
+        y_var=y_var,
+        y_var_order=y_var_order,
+        x_var=x_var,
+        x_var_order=x_var_order,
+        round_decimals=False,
+        method_scaling_importance=method_scaling_importance,
+    )
+
+    # display(pivot_df)
+
+    # Define colormap and normalize values
+    if change == "warmer_drier" or change == "warmer":
+        cmap = plt.get_cmap("Reds_r", len(y_var_order))
+    elif change == "warmer_wetter" or change == "cooler":
+        cmap = plt.get_cmap("Blues_r", len(y_var_order))
+    elif change == "cooler_drier" or change == "drier":
+        cmap = plt.get_cmap("Oranges_r", len(y_var_order))
+    elif change == "cooler_wetter" or change == "wetter":
+        cmap = plt.get_cmap("Purples_r", len(y_var_order))
+    elif change == "other":
+        cmap = plt.get_cmap("Greys_r", len(y_var_order))
+    else:
+        raise ValueError(f"🟥 Change not recognized: {change}")
+
+    norm = plt.Normalize(vmin=0, vmax=len(y_var_order) - 1)
+
+    # Plotting with matplotlib
+    # plt.figure(figsize=(10, 6))  # Adjust figure size if needed
+
+    # Loop through each metric and plot stacked bars with colormap shades
+    labels_legend = []
+    bottom = None
+    for i, metric in enumerate(y_var_order):
+        # Count the number of occurrences for each metric
+        metric_perc = pivot_df.sum(axis=1)[metric]
+        metric_perc = round_to_0_decimals(metric_perc)
+        metric_perc = int(metric_perc)
+        labels_legend.append(f"{metric} ({metric_perc}%)")
+        values = pivot_df.loc[metric, x_var_order].values
+        if bottom is None:
+            ax.bar(
+                x_var_order,
+                values,
+                label=metric,
+                color=cmap(norm(i)),
+                edgecolor="black",
+                width=1,
+            )
+            bottom = values
+        else:
+            ax.bar(
+                x_var_order,
+                values,
+                bottom=bottom,
+                label=metric,
+                color=cmap(norm(i)),
+                edgecolor="black",
+                width=1,
+            )
+            bottom += values
+
+    # Customize the plot
+    # ax.set_title("Stacked Bar Chart of Temp Metrics by Season")
+    ax.set_xlabel(x_var)
+    ax.set_ylabel("Occurrence per species and run (%)")
+    ax.legend(title=y_var, loc="best", labels=labels_legend)
+
+    if ylim is not None:
+        ax.set_ylim(ylim)
+
+    if title is not None:
+        ax.set_title(title)
+
+    # If spei duration is on the x axis set nice ticks
+    if x_var == "spei_duration":
+        ax.xaxis.set_major_locator(ticker.MultipleLocator(3))
+
+    # Show plot
+    # ax.tight_layout()
+    # ax.show()
+
+    return ax
+
+
+# ! ----------------------------------------------------------------------------------------------------------------------------------
+def calculate_weighted_mean_importance(df, importance_columns):
+    """
+    Calculate the weighted mean importance for each species and each importance column.
+
+    Args:
+    df (pd.DataFrame): Input DataFrame containing 'species' and importance columns.
+    importance_columns (list): List of importance column names.
+
+    Returns:
+    pd.DataFrame: DataFrame with weighted mean importance for each species and importance column.
+    """
+    # Initialize an empty DataFrame to store the results
+    result_df = pd.DataFrame()
+
+    # Iterate over each importance column to calculate the weighted mean importance
+    for column in importance_columns:
+        # Group by species and calculate the sum of importance and the count of occurrences
+        species_grouped = df.groupby("species").agg(
+            total_importance=(column, "sum"), count=(column, "count")
+        )
+
+        # Calculate the weighted mean importance for each species
+        species_grouped[f"weighted_mean_{column}"] = (
+            species_grouped["total_importance"] / species_grouped["count"]
+        )
+
+        # Keep only the weighted mean importance column
+        result_df[f"weighted_mean_{column}"] = species_grouped[
+            f"weighted_mean_{column}"
+        ]
+
+    return result_df.reset_index()
+
+
+# ! ------------------------------
+def f_nuniques(values):
+    return values.nunique()
+
+
+# ! ------------------------------
+def main_cat_index(values):
+    return values.value_counts().index[0]
+
+
+# ! ------------------------------
+def main_cat_perc(values):
+    return values.value_counts(normalize=True).values[0].round(2)
+
+
+# ! ------------------------------
+def draw_pie(
+    ax,
+    data,
+    max_size,
+    min_size=0,
+    scale_by100perc=False,
+    size_scale=1,
+    cmap="viridis",
+):
+    sizes = [
+        data["max"].values[0],
+        data["min"].values[0],
+        data["mean"].values[0],
+    ]
+    total_size = data["size"].values[0]
+
+    if scale_by100perc:
+        scaled_radius = np.sqrt(total_size / 100) * 0.8
+    else:
+        scaled_radius = np.sqrt(total_size / max_size) * 0.425
+        if np.isnan(scaled_radius):
+            scaled_radius = 0.0
+
+    # If the size is too small, return empty pie chart
+    if scaled_radius <= min_size:
+        ax.pie([1], radius=0.001, colors=["w"])
+        return
+    # Merge sizes with colors
+    df_sizes = pd.DataFrame(sizes, columns=["size"], index=["max", "min", "mean"])
+    # Attach colors
+    df_sizes["color"] = sns.color_palette(cmap, 3)
+    # Sort by size
+    df_sizes = df_sizes.sort_values("size", ascending=False)
+
+    ax.pie(
+        df_sizes["size"],
+        radius=scaled_radius * size_scale,
+        colors=df_sizes["color"],
+        wedgeprops=dict(edgecolor="w", linewidth=0),
+        startangle=90,
+        counterclock=True,
+    )
+    ax.set_title("")
+    ax.set_ylabel("")
+    ax.set_xlabel("")
+
+def response_classification(
+    df_all_in,
+    scale_shap,
+    scale_response,
+    roc_threshold,
+    dir_save,
+    make_plots,
+    verbose=True,
+):
+
+    # TODO: DEBUG to overwrite species (and uncleaned variables)
+    response_pval = 0.05  # Does not matter, pval classification is done later
+    pval_threshold = 0.05  # Does not matter, pval classification is done later
+    # For debugging purposes (see DEBUG lines below)
+    overwrite_species = "Picea abies"
+    overwrite_group = 2
+
+    df_patterns = []
+    df_models = []
+    df_resp_class = []
+    runs_dict = {}
+
+    outer_count = 0
+
+    for my_species in df_all_in.species.unique():
+
+        # TODO: DEBUG to overwrite species
+        # my_species = overwrite_species
+        # if my_species != overwrite_species:
+        # continue
+
+        # Verbose
+        outer_count += 1
+        if verbose:
+            print(f"{outer_count}/{len(df_all_in.species.unique())}\t{my_species}")
+
+        # ! Filter for species
+        df = df_all_in.query(f"species == '{my_species}'").copy()
+        # ! Filter for valid models
+        df = df.query("test_boot_mean >= @roc_threshold").copy()
+        # ! Aggregate model runs of the same spei-temp combination
+        df_agg, df_clean = aggregate_spei_temp_responses(my_species, df)
+        df_agg_red = df_agg.copy()
+        df_agg_red["group"] = 9999
+
+        group_count = 0
+        perc_count = 0
+
+        for i in range(df_agg_red.shape[0]):
+            iruns = df_agg_red.loc[i, "runs"].copy()
+
+            # For first run of this species, create new entry
+            if df_agg_red.loc[i, "species"] not in runs_dict:
+                runs_dict[df_agg_red.loc[i, "species"]] = iruns
+            # If species is already in, add up runs
+            else:
+                runs_dict[df_agg_red.loc[i, "species"]] += iruns
+
+            # If group should be analyzed, continue:
+            # Rerun interaction plots for this pattern group
+            idf = (
+                df.copy()
+                .query(f"species == '{my_species}' and run in @iruns")
+                .sort_values("run")
+            )
+
+            # Add group counter
+            group_count += 1
+            df_agg_red.loc[i, "group"] = group_count
+            idf["group"] = group_count
+
+            # # TODO: IMPORTANT: When removing this part, I need to fix the short-cutting I did above too!
+            # # Pick a specific group of spei-temp combinations to check for direction of change
+            # if group_count == overwrite_group:
+            #     # display(idf)
+            #     raise ValueError(
+            #         "🟥 I am debugging the plot_shap_response and stop here to get the correct idf."
+            #     )
+
+            # Gather models
+            idf_model = df_clean.query(f"subset_group in @iruns").copy()
+            idf_model["group"] = group_count
+            df_models.append(idf_model)
+
+            # Display
+            if verbose:
+                print(f" ----- GROUP {group_count} of {my_species} -----")
+            # display(df_agg_red.loc[i, :].to_frame().T)
+            # display(idf)
+
+            # ! Response assessment (check if variable is in the model)
+            if idf["SPEI - Metrics"].dropna().__len__() == 0:
+                pass
+            else:
+                tmp = classify_shap_response_per_species_and_feature_group(
+                    df=idf.copy(),
+                    species_in=my_species,
+                    group_in=group_count,
+                    response="SPEI",
+                    scale_shap=scale_shap,
+                    scale_response=scale_response,
+                    pval_threshold=response_pval,
+                    show=False,
+                    remove_labels=False,
+                    dir_analysis=f"{dir_save}/{my_species}/single_response_classification",
+                    filesuffix=f"{group_count}",
+                    make_plots=make_plots,
+                    verbose=verbose,
+                )
+                df_resp_class.append(tmp)
+
+            if idf["Temperature - Metrics"].dropna().__len__() == 0:
+                pass
+            else:
+                tmp = classify_shap_response_per_species_and_feature_group(
+                    df=idf.copy(),
+                    species_in=my_species,
+                    group_in=group_count,
+                    response="Temperature",
+                    scale_shap=scale_shap,
+                    scale_response=scale_response,
+                    pval_threshold=response_pval,
+                    show=False,
+                    remove_labels=False,
+                    dir_analysis=f"{dir_save}/{my_species}/single_response_classification",
+                    filesuffix=f"{group_count}",
+                    make_plots=make_plots,
+                    verbose=verbose,
+                )
+                df_resp_class.append(tmp)
+
+            # Add counter
+            perc_count += df_agg.loc[i, "perc_runs"]
+
+        # Finalizing
+        df_agg_red["perc_run_subset"] = (
+            df_agg_red["group_size"] / df_agg_red["group_size"].sum() * 100
+        ).astype(int)
+
+        df_agg_red["spei_response_increasing_mortality"] = ""
+        df_agg_red["temp_response_increasing_mortality"] = ""
+        df_agg_red["consistent_response"] = ""
+        df_agg_red["merge_with_group_x"] = ""
+
+        df_agg_red = move_vars_to_front(
+            df_agg_red,
+            [
+                "species",
+                "group",
+                "group_size",
+                "spei_response_increasing_mortality",
+                "temp_response_increasing_mortality",
+                "consistent_response",
+                "merge_with_group_x",
+                # "Temperature - Season",
+                # "SPEI - Duration",
+                # "SPEI - Duration Agg.",
+                "perc_runs",
+                "perc_run_subset",
+                # "SPEI - Season",
+                "spei_metrics",
+                # "temperature_metrics",
+            ],
+        )
+
+        df_patterns.append(df_agg_red)
+
+    # Concatenate all models
+    df_models = pd.concat(df_models).reset_index(drop=True)
+    df_patterns = pd.concat(df_patterns).reset_index(drop=True)
+    df_resp_class_concat = pd.concat(df_resp_class).reset_index(drop=True)
+
+    # ! CAREFUL: IF THIS IS RUN PER MP, THEN THE FINAL DF WILL BE AT THE SPECIES LEVEL!
+    # Check if more than one species was analyzed
+    if df_all_in.species.nunique() == 1:
+        extra = f"{my_species}/"
+        if verbose:
+            print(
+                "🚨 Careful, this function was run for a single species, not looped over multiple ones! --> Aggregation of csv files needed!"
+            )
+    else:
+        extra = ""
+
+    df_models.to_csv(
+        f"{dir_save}/{extra}/runs_aggregated_by_spei_temp_pairs-filtered_by_roc-not_grouped.csv",
+        index=False,
+    )
+
+    df_patterns.to_csv(
+        f"{dir_save}/{extra}/runs_aggregated_by_spei_temp_pairs-filtered_by_roc-grouped.csv",
+        index=False,
+    )
+    
+    if verbose:
+        print(f"🟢 Saved to disk: {dir_save}/{extra}/runs_aggregated_by_spei_temp_pairs-filtered_by_roc-grouped.csv")
+
+    # This is not needed because the classification files are saved separately
+    # df_resp_class_concat.to_csv(
+    #     f"{dir_save}/{extra}/runs_aggregated_by_spei_temp_pairs-response_classification.csv",
+    #     index=False,
+    # )
+    
+    return []
+    
+
+
+def classify_shap_response_per_species_and_feature_group(
+    df,
+    species_in,
+    group_in,
+    response,
+    scale_shap,
+    scale_response,
+    pval_threshold,
+    show,
+    remove_labels,
+    dir_analysis,
+    filesuffix,
+    make_plots,
+    verbose=True,
+):
+    # Make dirs
+    os.makedirs(dir_analysis, exist_ok=True)
+    os.makedirs(f"{dir_analysis}/all_runs", exist_ok=True)
+
+    # Clean the dataset so that all rows where response is na are removed
+    remove_these = []
+    for run in df["subset_group"].values:
+
+        check1 = get_relevant_feature(df, run, response)
+        if check1 is None:
+            remove_these.append(run)
+
+    # print(
+    #     f" - For {response}, the following runs are removed due to missing features: {remove_these}"
+    # )
+
+    df_plot = df.query("subset_group not in @remove_these")
+
+    # Inputs
+    unique_runs = df_plot["subset_group"].unique()
+    n_runs = len(unique_runs)
+    if n_runs > 20:
+        n_cols = 6
+        figx = 25
+    else:
+        n_cols = 4
+        figx = 15
+    n_rows = (n_runs + n_cols - 1) // n_cols  # Calculate the number of rows needed
+
+    # Start figure skeleton
+    if n_runs <= n_cols:
+        fig, axs = plt.subplots(
+            n_rows, n_cols, figsize=(figx, 4), sharey=False, sharex=False
+        )
+    elif remove_labels:
+        fig, axs = plt.subplots(
+            n_rows, n_cols, figsize=(figx, 2 * n_rows), sharey=False, sharex=False
+        )
+    else:
+        fig, axs = plt.subplots(
+            n_rows, n_cols, figsize=(figx, 3 * n_rows), sharey=False, sharex=False
+        )
+
+    df_trends = []
+
+    for idx, irun in enumerate(unique_runs):
+
+        # Get current species from filepath in the df
+        ispecies = dir_analysis.split("/")[8]
+        
+        # Clean irun
+        irun_clean = irun.split(" (")[0]
+
+        # ! Get data -----------------------------------------------------
+        # Get feature to plot
+        feat_response = get_relevant_feature(df_plot, irun, response)
+        # Get filepath
+        filepath = df_plot.query("subset_group == @irun")["dir"].values[0]
+        # Load feature data to access corresponding SHAP values
+        X_shap = pd.read_csv(f"{filepath}/final_model/X_test.csv", index_col=0)
+        feature_names = pd.Series(X_shap.columns)
+        feat_response_values = X_shap[feat_response].values
+        pos_response = feature_names[feature_names == feat_response].index[0]
+
+        # Load SHAP data at position of feature (using new code in the backend)
+        shap_values = load_shap(
+            filepath + "shap/approximated/shap_values_test.pkl"
+        )
+        shap_values = shap_values[:, pos_response, 1].values
+
+        # Clean data for trend assessing
+        # Flip values for SPEI to facilitate interpretation
+        if response == "SPEI":
+            feat_response_values = -feat_response_values
+
+        # Scale feature and shap values
+        from sklearn.preprocessing import MinMaxScaler
+
+        scaler = MinMaxScaler()
+        if scale_shap:
+            shap_values = scaler.fit_transform(shap_values.reshape(-1, 1)).flatten()
+
+        if scale_response:
+            feat_response_values = scaler.fit_transform(
+                feat_response_values.reshape(-1, 1)
+            ).flatten()
+
+        # Verbose
+        if verbose:
+            print(
+                f" - Working on species {ispecies} | run {irun} | ({idx + 1}/{n_runs}) \t| Feature: {feat_response}"
+            )
+
+        # ! LM fitting -----------------------------------------------------
+
+        # Get different derivatives for LMs
+        x_lin = feat_response_values
+        x_quad = feat_response_values**2
+        x_cub = feat_response_values**3
+        
+        # Taking log sometimes causes error, suppress it. NAs will be removed later
+        with np.errstate(invalid="ignore"):
+            x_log = np.log1p(feat_response_values)
+        
+        # Merge into one df
+        df_lm_data = (
+            pd.DataFrame(
+                {
+                    "x_lin": x_lin,
+                    "x_quad": x_quad,
+                    "x_cub": x_cub,
+                    "x_log": x_log,
+                    "y": shap_values,
+                }
+            )
+            .sort_values("x_lin")
+            .reset_index(drop=True)
+        )
+
+        # Loop over all models
+        results = []
+        # for modelType in ["linear", "quadratic", "cubic", "log"]:
+        for modelType in ["linear"]:
+
+            # Define features
+            if modelType == "linear":
+                features = ["x_lin"]
+                abbrev = "lin"
+            elif modelType == "quadratic":
+                features = ["x_lin", "x_quad"]
+                abbrev = "quad"
+            elif modelType == "cubic":
+                features = ["x_lin", "x_quad", "x_cub"]
+                abbrev = "cubic"
+            elif modelType == "log":
+                features = ["x_log"]
+                abbrev = "log"
+                df_lm_data = df_lm_data.dropna()
+
+            # Define formula
+            formula = "y ~ " + " + ".join(features)
+
+            # Fit model
+            # Ignore warnings
+            with np.errstate(invalid="ignore"):
+                model = Lm(
+                    formula,
+                    data=pd.concat([df_lm_data["y"], df_lm_data[features]], axis=1),
+                    family="gaussian",
+                )
+            
+            # Fit model
+            if verbose:
+                sry = model.fit(verbose=True).reset_index()
+            else:
+                # set a trap and redirect stdout (see https://codingdose.info/posts/supress-print-output-in-python/)
+                from contextlib import redirect_stdout
+                trap = io.StringIO()
+                with redirect_stdout(trap):
+                    sry = model.fit(verbose=False).reset_index()
+            
+            # Get and save predictions
+            y_pred = model.predict(df_lm_data[features])
+            df_lm_data[f"y_pred_{modelType}"] = y_pred.copy()
+
+            # Get metrics
+            r2 = r2_score(df_lm_data.y, y_pred)
+            rmse = root_mean_squared_error(df_lm_data.y, y_pred)
+            aic = model.AIC
+
+            # Record results
+            iresults = pd.DataFrame(
+                {
+                    "method": modelType,
+                    f"r2": r2,
+                    f"rmse": rmse,
+                    f"aic": aic,
+                },
+                index=[0],
+            )
+
+            # iresults["formula"] = formula
+            iresults["r2"] = f"{r2}"
+            iresults["legend"] = f"{modelType}"
+
+            for i, row in sry.iterrows():
+                iestimate = row["Estimate"]
+                ipval = row["P-val"]
+
+                iresults[f"coef{i}"] = iestimate
+                iresults[f"coef{i}_pval"] = ipval
+
+                # Check for trend for the slope
+                if i == 1 and ipval < pval_threshold:
+                    if row["Estimate"] > 0:
+                        iresults["trend"] = "increasing"
+                    elif row["Estimate"] < 0:
+                        iresults["trend"] = "decreasing"
+                else:
+                    iresults["trend"] = "no trend"
+
+            results.append(iresults)
+
+            # For plot, get predictions along x-axis
+            y_pred = model.predict(df_lm_data[features])
+            if modelType == "log":
+                y_pred = np.exp(y_pred) - 1
+
+            df_lm_data[f"y_pred_{modelType}"] = y_pred
+
+        results = pd.concat(results, axis=0).reset_index(drop=True)
+        # results.to_csv(
+        #     f"{dir_analysis}/{response}-{feat_response}-classification_lm.csv",
+        #     index=False,
+        # )
+
+        # ! Trend assessment -----------------------------------------------------
+        trends = pd.DataFrame()
+        # New: Only do MK tests
+        # Raw
+        tmp = get_mk_test_raw(df_lm_data["x_lin"], df_lm_data["y"])
+        trends = pd.concat([trends, tmp])
+        # Loess
+        tmp = get_mk_test_loess(df_lm_data["x_lin"], df_lm_data["y"])
+        trends = pd.concat([trends, tmp])
+
+        # Merge lm and other results
+        trends = trends.reset_index(drop=True)
+        trends = pd.concat([trends, results], axis=0).reset_index(drop=True)
+
+        # Add information
+        trends["species"] = ispecies
+        trends["run"] = irun
+        trends["feature"] = feat_response
+        trends["group"] = group_in
+        trends["response"] = response
+        trends = move_vars_to_front(
+            trends, ["species", "run", "group", "response", "feature", "trend"]
+        )
+
+        # Save it
+        
+        trends_file = f"{dir_analysis}/all_runs/{response}-{feat_response}-group_{filesuffix}-{irun_clean}.csv"
+        
+        if verbose:
+            print(f"🟢 Saved to disk: {trends_file}")
+        
+        trends.to_csv(trends_file, index=False)
+
+        trends_concat = pd.concat(
+            [trends[["method", "trend"]], results[["method", "trend"]]], axis=0
+        ).reset_index(drop=True)
+
+        # * Old code for multiple assessments
+        # # Note: results is from lm fitting above
+        # trends = get_trend_assessment(df_lm_data["x_lin"], df_lm_data["y"], results)
+        # # Output needs some cleaning...
+        # colnames = trends["method"].tolist()
+        # rownames = trends["trend"].tolist()
+        # trends = pd.DataFrame()
+        # trends["trend"] = rownames
+        # trends = trends.T.reset_index(drop=True)
+        # trends.columns = colnames
+        # trends["species"] = ispecies
+        # trends["run"] = irun
+        # trends["feature"] = feat_response
+        # trends["group"] = group_in
+        # trends["response"] = response
+        # *
+
+        # Append to list
+        df_trends.append(trends)
+
+        # ! START PLOT -----------------------------------------------------
+        if make_plots:
+
+            # Get subplot
+            row = idx // n_cols
+            col = idx % n_cols
+
+            # Get plot layout
+            if response == "SPEI":
+                # color = "gold"
+                color = "Greens"
+            elif response == "Temperature":
+                color = "Oranges"
+            else:
+                color = "grey"
+
+            if n_runs > n_cols:
+                ax = axs[row, col]
+            else:
+                ax = axs[col]
+
+            # Create 2D density plot
+            sns.kdeplot(
+                x=df_lm_data["x_lin"],
+                y=df_lm_data["y"],
+                cmap=color,
+                fill=True,
+                ax=ax,
+                warn_singular=False,
+            )
+
+            # Add trend lines
+            for i, row in results.iterrows():
+                ax.plot(
+                    df_lm_data["x_lin"],
+                    df_lm_data[f"y_pred_{row['method']}"],
+                    label=row["legend"],
+                    linestyle="--",
+                    linewidth=1,
+                )
+
+            # Add LOESS smoother
+            sns.regplot(
+                x=df_lm_data["x_lin"],
+                y=df_lm_data["y"],
+                scatter=False,
+                lowess=True,
+                line_kws={"color": "black", "linewidth": 1},
+                ax=ax,
+                label="LOESS",
+            )
+
+            # Add text
+            trend_lin = trends_concat.query("method == 'linear'")["trend"].values[0]
+            trend_mk = trends_concat.query("method == 'mk_raw'")["trend"].values[0]
+            ax.text(
+                0.05,
+                0.95,
+                f"Linear: {trend_lin}\nMK: {trend_mk}",
+                horizontalalignment="left",
+                verticalalignment="top",
+                transform=ax.transAxes,
+                fontsize=8,
+            )
+
+            # Add layout
+            ylabel = "SHAP Value"
+            xlabel = feat_response
+
+            if scale_shap:
+                ylabel = "Scaled SHAP Value"
+
+            if scale_response:
+                xlabel = "Scaled " + xlabel
+            else:
+                xlabel = "Original " + xlabel
+                if response == "SPEI":
+                    xlabel = xlabel + (" (mirrored by taking negative)")
+
+            ax.set_xlabel(xlabel)
+            ax.set_ylabel(ylabel)
+            ax.set_title(f"{irun}", weight="bold")
+            ax.spines["top"].set_visible(False)
+            ax.spines["right"].set_visible(False)
+
+            # Set ylim and xlim
+            if scale_shap:
+                ax.set_ylim(-0.05, 1.05)
+            if scale_response:
+                ax.set_xlim(-0.05, 1.05)
+
+            if remove_labels:
+                ax.set_xlabel("")
+                ax.set_ylabel("")
+                ax.set_xticks([])
+                ax.set_yticks([])
+
+            # END of Loop for plotting single variable done
+
+    if make_plots:
+
+        # Add legend
+        handles, labels = ax.get_legend_handles_labels()
+        fig.legend(
+            handles,
+            labels,
+            loc="center",
+            title="Model Type",
+            # bbox_to_anchor=(0., 0),
+            ncol=4,
+        )
+
+        # Remove empty subplots if n_runs is not a multiple of n_cols
+        for i in range(n_runs, n_rows * n_cols):
+            fig.delaxes(axs.flatten()[i])
+
+        # Give plot a title
+        fig.suptitle(
+            f"SHAP Scatterplot for {response}\n\n",
+            fontsize=20,
+            weight="bold",
+        )
+
+        plt.tight_layout()
+        plt.savefig(
+            f"{dir_analysis}/{response}-group_{filesuffix}.png"
+        )
+        if show:
+            plt.show()
+        else:
+            plt.close()
+
+    else:
+        plt.close()
+        if verbose:
+            print(
+                "🚨 No plots were made because 'make_plots = False' in plot_shap_response()!"
+            )
+
+    # Concatenate all results
+    df_trends = pd.concat(df_trends)
+
+    return df_trends
+
+
+# Helper function to detect trend direction
+def detect_trend(slope):
+    if slope > 0:
+        return "increasing"
+    elif slope < 0:
+        return "decreasing"
+    else:
+        return "no trend"
+
+
+# 1. MK Test on Raw Data
+def get_mk_test_raw(x, y, pval_threshold=0.05):
+    result = mk.original_test(y)
+
+    if result.p < pval_threshold:
+        trend = detect_trend(result.slope)
+    else:
+        trend = "no trend"
+
+    # Turn results into a dictionary
+    result = {
+        "method": "mk_raw",
+        "trend": result.trend,
+        "h": result.h,
+        "p": result.p,
+        "z": result.z,
+        "tau": result.Tau,
+        "s": result.s,
+        "var_s": result.var_s,
+        "slope": result.slope,
+        "intercept": result.intercept,
+    }
+
+    # Turn into a DataFrame
+    result = pd.DataFrame(result, index=[0])
+
+    return result
+
+
+# 2. MK Test on Loess Smoothed Data
+def get_mk_test_loess(x, y, frac=0.3, pval_threshold=0.05):
+    # Ensure x and y are numpy arrays
+    x, y = np.array(x), np.array(y)
+
+    # Apply LOESS smoothing
+    loess_result = lowess(y, x, frac=frac, return_sorted=False)
+
+    # Conduct Mann-Kendall trend test on smoothed data
+    result = mk.original_test(loess_result)
+
+    if result.p < pval_threshold:
+        trend = detect_trend(result.slope)
+    else:
+        trend = "no trend"
+
+    # Compile results
+    result = {
+        "method": "mk_smooth",
+        "trend": result.trend,
+        "h": result.h,
+        "p": result.p,
+        "z": result.z,
+        "tau": result.Tau,
+        "s": result.s,
+        "var_s": result.var_s,
+        "slope": result.slope,
+        "intercept": result.intercept,
+        "smoothed_y": [loess_result],
+    }
+
+    # Turn into a DataFrame
+    result = pd.DataFrame(result, index=[0])
+
+    return result
+
+
+# 6. Piecewise Monotonicity on Raw Data
+def get_piecewise_monotonicity(x, y):
+    differences = np.diff(y)
+    if np.all(differences >= 0):
+        trend = "increasing"
+    elif np.all(differences <= 0):
+        trend = "decreasing"
+    else:
+        trend = "no trend"
+    return pd.DataFrame(
+        {
+            "method": "piecewise_monotonicity_raw",
+            "trend": [trend],
+            "direction_changes": [np.sum(np.diff(np.sign(differences)) != 0)],
+        }
+    )
+
+
+# 7. Directional Sign Test on Raw Data
+def get_directional_sign_test_raw(y):
+    diffs = np.diff(y)
+    positives = np.sum(diffs > 0)
+    negatives = np.sum(diffs < 0)
+    trend = (
+        "increasing"
+        if positives > negatives
+        else "decreasing" if negatives > positives else "no trend"
+    )
+    return pd.DataFrame(
+        {
+            "method": "directional_sign",
+            "trend": [trend],
+            "positives": [positives],
+            "negatives": [negatives],
+        }
+    )
+
+
+# 8. Directional Sign Test on Loess Smoothed Data
+def get_directional_sign_test_loess(x, y, frac=0.3):
+    loess_result = lowess(y, x, frac=frac, return_sorted=False)
+    loess_result = directional_sign_test_raw(loess_result)
+    loess_result["method"] = "directional_sign_loess"
+    return loess_result
+
+
+# 9. Cumulative Sum of Differences on Raw Data
+def get_cumsum_diff_raw(y):
+    diffs = np.diff(y)
+    cumsum_diff = np.cumsum(diffs)
+    trend = detect_trend(np.sum(diffs))
+    return pd.DataFrame(
+        {"method": "cumsum", "trend": [trend], "cumsum_diff": [cumsum_diff[-1]]}
+    )
+
+
+# 10. Cumulative Sum of Differences on Loess Smoothed Data
+def get_cumsum_diff_loess(x, y, frac=0.3):
+    loess_result = lowess(y, x, frac=frac, return_sorted=False)
+    loess_result = directional_sign_test_raw(loess_result)
+    loess_result["method"] = "cumsum_loess"
+    return loess_result
+
+
+# ! Combine all into one function -----------------------------------------------------
+def get_trend_assessment(feat_response_values, shap_values, results):
+    trends = results[["method", "trend"]].copy()
+
+    trends = pd.concat(
+        [
+            trends,
+            get_mk_test_raw(feat_response_values, shap_values)[["method", "trend"]],
+        ]
+    )
+    trends = pd.concat(
+        [
+            trends,
+            get_mk_test_loess(feat_response_values, shap_values, frac=0.3)[
+                ["method", "trend"]
+            ],
+        ]
+    )
+    # trends = pd.concat(
+    #     [
+    #         trends,
+    #         get_piecewise_monotonicity(feat_response_values, shap_values)[
+    #             ["method", "trend"]
+    #         ],
+    #     ]
+    # )
+    # trends = pd.concat(
+    #     [trends, get_directional_sign_test_raw(shap_values)[["method", "trend"]]]
+    # )
+    # trends = pd.concat(
+    #     [
+    #         trends,
+    #         get_directional_sign_test_loess(
+    #             feat_response_values, shap_values, frac=0.3
+    #         )[["method", "trend"]],
+    #     ]
+    # )
+    # trends = pd.concat([trends, get_cumsum_diff_raw(shap_values)[["method", "trend"]]])
+    # trends = pd.concat(
+    #     [
+    #         trends,
+    #         get_cumsum_diff_loess(feat_response_values, shap_values, frac=0.3)[
+    #             ["method", "trend"]
+    #         ],
+    #     ]
+    # )
+
+    return trends.reset_index(drop=True)
+
+
+# ------------------------------
+# classify_shap_response_per_species_and_feature_group(
+#     df=idf.copy(),
+#     species_in=my_species,
+#     group_in=group_count,
+#     response="Temperature",
+#     scale_shap=scale_shap,
+#     scale_response=True,
+#     pval_threshold=0.05,
+#     show=True,
+#     remove_labels=False,
+#     dir_analysis=f"{dir_save}/{my_species}/by_roc/most_common_patterns",
+#     filesuffix=f"most_common_runs-group_{group_count}",
+#     make_plots=True,
+# )
+
+
+# -----------------------------------------------------------------------------------------------
+
+def ___GLMM_FUNCTIONS___():
     pass
 
 
-def BU_run_smote_classification(
-    Xy=None,
-    user_input=None,
-    var_ohe_dict=None,
-    return_vi_from_all_data_model=False,
-    return_cv_from_all_data_model=False,
-    cv_folds=5,
-    cv_repeats=1,
-    nestimators=150,
-    verbose=True,
-    return_eval=True,
-    Xy_train=None,
-    Xy_test=None,
-    best_params=None,
+def glmm_get_data(myset, base_dir, idir, drop_smote=True, verbose=False):
+    
+    xpath = f"{base_dir}/{idir}/final_model/X_{myset}.csv"
+    if not os.path.exists(xpath):
+        if verbose:
+            print(f"🚨 X_{myset} for {idir} does not exist! Skipping...")
+        return None
+        
+    
+    x = pd.read_csv(xpath).drop(
+        columns={"Unnamed: 0"}
+    )
+
+    xid = pd.read_csv(f"{base_dir}/{idir}/treeid/X_{myset}_treeid.csv").drop(
+        columns={"Unnamed: 0"}
+    )
+
+    if x.shape[0] != xid.shape[0]:
+        if verbose:
+            print(" - 🚨 x and xid have different number of rows")
+
+    x = pd.concat([x, xid], axis=1)
+
+    # Attach siteid
+    x["site_id"] = x["tree_id"].str.split("_").str[0]
+    x = x.drop(columns=["tree_id"])
+    y = pd.read_csv(f"{base_dir}/{idir}/final_model/y_{myset}.csv").drop(
+        columns={"Unnamed: 0"}
+    )
+    xy = pd.concat([y, x], axis=1)
+    xy.columns = xy.columns.str.replace("_", "_").str.replace("-", "_")
+
+    # X_test holds also SMOTE data, so we need to attach a common site id for the SMOTE data (-9999)
+    # Or actually remove it
+    if myset == "train":
+        if drop_smote:
+            if verbose:
+                print(" - Dropping SMOTE data")
+            xy = xy.dropna()
+        else:
+            if verbose:
+                print("Keeping SMOTE data")
+            xy["site_id"] = xy["site_id"].fillna("-9999")
+    return xy
+
+
+def glmm_model_evaluation_classification(
+    glmm_model,
+    X_train,
+    y_train,
+    X_test,
+    y_test,
+    prob_threshold=0.5,
     save_directory=None,
+    metric="f1-score",
+    verbose=True,
+):
+    # GLMM model prediction (returns predicted probabilities in logistic regression)
+    y_train_pred_proba = pd.Series(
+        glmm_model.predict(
+            X_train, verify_predictions=False, skip_data_checks=True, verbose=verbose
+        )
+    )
+    y_test_pred_proba = pd.Series(
+        glmm_model.predict(
+            X_test, verify_predictions=False, skip_data_checks=True, verbose=verbose
+        )
+    )
+
+    # Convert probabilities into binary predictions based on the threshold
+    y_train_pred = (y_train_pred_proba >= prob_threshold).astype("int")
+    y_test_pred = (y_test_pred_proba >= prob_threshold).astype("int")
+
+    # Convert arrays into pandas series for ease of manipulation
+    y_train_pred = pd.Series(y_train_pred)
+    y_test_pred = pd.Series(y_test_pred)
+
+    # Save predictions, probabilities, and actuals to files
+    if save_directory is not None:
+        os.makedirs(f"{save_directory}", exist_ok=True)
+
+        # Save predictions - binary
+        y_train_pred.to_csv(f"{save_directory}/y_train_pred.csv")
+        y_test_pred.to_csv(f"{save_directory}/y_test_pred.csv")
+
+        # Save predictions - probabilities
+        pd.DataFrame(y_train_pred_proba, columns=["predicted_proba"]).to_csv(
+            f"{save_directory}/y_train_proba.csv"
+        )
+        pd.DataFrame(y_test_pred_proba, columns=["predicted_proba"]).to_csv(
+            f"{save_directory}/y_test_proba.csv"
+        )
+
+        # Save actuals
+        y_train.to_csv(f"{save_directory}/y_train.csv")
+        y_test.to_csv(f"{save_directory}/y_test.csv")
+
+        # Save features
+        X_train.to_csv(f"{save_directory}/X_train.csv")
+        X_test.to_csv(f"{save_directory}/X_test.csv")
+
+        # Save the model
+        with open(f"{save_directory}/glmm_model.pkl", "wb") as file:
+            pickle.dump(glmm_model, file)
+
+    # Calculate confusion matrices
+    unique_labels = np.unique(np.concatenate((y_train, y_test)))
+    confusion_train = confusion_matrix(y_train, y_train_pred, labels=unique_labels)
+    confusion_test = confusion_matrix(y_test, y_test_pred, labels=unique_labels)
+
+    # Classification reports for both training and test data
+    report_train_dict = classification_report(
+        y_train, y_train_pred, digits=3, output_dict=True
+    )
+    report_test_dict = classification_report(
+        y_test, y_test_pred, digits=3, output_dict=True
+    )
+
+    report_train_txt = classification_report(y_train, y_train_pred, digits=3)
+    report_test_txt = classification_report(y_test, y_test_pred, digits=3)
+
+    # # Print training and testing information
+    # if verbose:
+    #     print("--- model_evaluation_classification():")
+    #     print(f"Number of training data points: {len(y_train)}")
+    #     print(f"Number of testing data points: {len(y_test)}")
+    #     print("\nTrain Classification Report:\n", report_train_txt)
+    #     print("\nTest Classification Report:\n", report_test_txt)
+
+    # Save reports
+    if save_directory is not None:
+        with open(f"{save_directory}/classification_report_train.txt", "w") as f:
+            f.write(report_train_txt)
+        with open(f"{save_directory}/classification_report_test.txt", "w") as f:
+            f.write(report_test_txt)
+
+    # Get max f1 for scaling bar plots
+    class_scores_train = [
+        report_train_dict[str(label)][metric] for label in unique_labels
+    ]
+    class_scores_test = [
+        report_test_dict[str(label)][metric] for label in unique_labels
+    ]
+
+    metric_max = max([0] + class_scores_train + class_scores_test)
+
+    # Baseline performance (predicting 0 for all samples)
+    y_baseline = pd.Series([0] * len(y_test))
+
+    scores_baseline = bootstrap_classification_metric(
+        y_test,
+        y_baseline,
+        metrics=["accuracy", "precision", "recall", "roc_auc"],
+        n_bootstraps=100,
+    )
+
+    scores_test = bootstrap_classification_metric(
+        y_test,
+        y_test_pred,
+        metrics=["accuracy", "precision", "recall", "roc_auc"],
+        n_bootstraps=100,
+    )
+
+    scores_train = bootstrap_classification_metric(
+        y_train,
+        y_train_pred,
+        metrics=["accuracy", "precision", "recall", "roc_auc"],
+        n_bootstraps=100,
+    )
+
+    # Save baseline and other results to files
+    if save_directory is not None:
+        scores_baseline.to_csv(
+            f"{save_directory}/final_model_scores_baseline.csv", index=False
+        )
+        scores_train.to_csv(
+            f"{save_directory}/final_model_scores_train.csv", index=False
+        )
+        scores_test.to_csv(f"{save_directory}/final_model_scores_test.csv", index=False)
+
+    df_metrics = pd.DataFrame(
+        {
+            "metric": "roc_auc",
+            "train_boot_mean": scores_train["roc_auc"].iloc[0],
+            "train_boot_sd": scores_train["roc_auc"].iloc[1],
+            "test_boot_mean": scores_test["roc_auc"].iloc[0],
+            "test_boot_sd": scores_test["roc_auc"].iloc[1],
+        },
+        index=[0],
+    )
+
+    if save_directory is not None:
+        df_metrics.to_csv(f"{save_directory}/classification_metrics.csv", index=False)
+
+    # ! Plot
+    # Set the figure size
+    plt.figure(figsize=(8, 4))
+
+    # Combine confusion matrices to find common color scale
+    combined_confusion = np.maximum(confusion_train, confusion_test)
+
+    # Plot ROC AUC curve
+    plot_roc_auc_both(
+        (y_train, y_train_pred_proba),
+        (y_test, y_test_pred_proba),
+        save_directory=save_directory,
+        show=verbose,
+        make_plot=False,
+    )
+    
+    plot_pr_auc_both(
+        (y_train, y_train_pred_proba),
+        (y_test, y_test_pred_proba),
+        save_directory=save_directory,
+        show=verbose,
+        make_plot=False,
+    )
+    
+def glmm_rfe(
+    xtrain,
+    ytrain,
+    rtrain,
+    verbose=True,
+):
+    import pandas as pd
+    import statsmodels.api as sm
+    
+    # Start loop
+    list_summaries = []
+    list_model_info = []
+    all_features_tested = False
+
+    # Initialize the loop
+    all_features_tested = False
+
+    # Remove features until all are significant
+    while not all_features_tested:
+        # Create a logistic regression model
+        n_features = xtrain.columns.__len__()
+        org_features = xtrain.columns.tolist()
+        formula = "target ~ " + " + ".join(xtrain.columns) + f" + (1|{rtrain.name})"
+        print(f" - Features: {n_features}\t | Formula: {formula}")
+
+        # Fit model
+        model = Lmer(
+            formula, data=pd.concat([ytrain, xtrain, rtrain], axis=1), family="binomial"
+        )
+        result = (
+            model.fit(verbose=False)
+            .sort_values("P-val", ascending=False)
+            .drop("(Intercept)", axis=0)
+        )
+
+        list_summaries.append(result)
+        
+        # Count how many significant variables are left
+        n_significant = (result["P-val"] < 0.05).sum()
+        # print(f"🚨 {n_significant} significant features left")
+        # display(result_2)
+        
+        # Calculate ROC-AUC
+        y_pred = model.predict(pd.concat([xtrain, rtrain], axis=1), skip_data_checks=True, verify_predictions=False)
+        roc_auc = roc_auc_score(ytrain, y_pred)
+        pr_auc = average_precision_score(ytrain, y_pred)
+
+        # Drop least important feature
+        least_important_feature = result.iloc[0].name
+
+        # Sometimes the interaction has switched variables order, so we need to check both
+        if ":" in least_important_feature:
+            var1, var2 = least_important_feature.split(":")
+            var1_var2 = f"{var1}:{var2}"
+            var2_var1 = f"{var2}:{var1}"
+
+            xtrain = xtrain.drop(var1_var2, axis=1, errors="ignore")
+            result_2 = result.drop(var1_var2, axis=0, errors="ignore").copy()
+
+            xtrain = xtrain.drop(var2_var1, axis=1, errors="ignore")
+            result_2 = result.drop(var2_var1, axis=0, errors="ignore").copy()
+        else:
+            xtrain = xtrain.drop(least_important_feature, axis=1, errors="ignore")
+            result_2 = result.drop(
+                least_important_feature, axis=0, errors="ignore"
+            ).copy()
+
+        # If main effect is dropped, drop interaction too
+        for col in xtrain.columns:
+            if ":" in col and (
+                col.split(":")[0] == least_important_feature
+                or col.split(":")[1] == least_important_feature
+            ):
+                xtrain = xtrain.drop(col, axis=1, errors="ignore")
+                result_2 = result_2.drop(col, axis=0, errors="ignore")
+
+        # Record results
+        list_model_info.append(
+            pd.DataFrame(
+                {
+                    "formula": formula,
+                    "AIC": model.AIC,
+                    "BIC": model.BIC,
+                    "PR": pr_auc,
+                    "ROC": roc_auc,
+                    "n_significant": n_significant,
+                    "n_features": n_features,
+                    "org_features": [org_features],
+                    "drop_feature": least_important_feature,
+                }
+            )
+        )
+        
+        # Check if all features are significant
+        print(" -------------------------- ")
+        if xtrain.columns.__len__() == 0:
+            all_features_tested = True
+
+        if not verbose:
+            clear_output()
+
+    return pd.concat(list_model_info)
+
+def glmm_run_per_species_and_model(
+    ispecies,
+    imodel,
+    do_rfe=False,
+    rfe_with_interactions=False,
+    add_spei_temp_interaction=False,
+    add_spei_temp_derivatives=False,
+    best_model_method="None",
+    path_prefix=None,
+    path_suffix=None,
+    return_all=False,
+    verbose=False,
+    skip_if_exists=True,
+):
+    
+    if do_rfe:
+        if best_model_method not in ["AIC", "BIC", "PR", "ROC"]:
+            chime.error()
+            raise ValueError("best_model_method must be one of 'AIC', 'BIC', 'PR', 'ROC'")
+    
+    if path_prefix is None or path_suffix is None:
+        raise ValueError(f"Path input is not correct, needs to be specified!")
+    
+    if verbose:
+        print(f"Species: {ispecies}\t | Model: {imodel}")
+
+    # Specify run
+    base_dir = path_prefix
+    idir = f"{imodel}/{ispecies}"
+    modeldir = path_suffix
+    if do_rfe:
+        modeldir = f"{modeldir}/best_model_{best_model_method}"
+        
+    os.makedirs(
+        f"{base_dir}/{idir}/{modeldir}",
+        exist_ok=True,
+    )
+
+    # ! Check if file exists
+    path_summary = f"{base_dir}/{idir}/{modeldir}/summary.csv"
+    if os.path.isfile(path_summary) and skip_if_exists:
+        if verbose:
+            print(" - 📂 Summary file exists, skipping...")
+        return []
+
+    if verbose:
+        print(
+            f" - 💾 Saving to: {base_dir}/{idir}/{modeldir}/"
+        )
+        
+    # Get data
+    xy_train = glmm_get_data(
+        "train", base_dir=base_dir, idir=idir, drop_smote=True, verbose=verbose
+    )
+    xy_test = glmm_get_data("test", base_dir=base_dir, idir=idir, verbose=verbose)
+
+    # Check if data was loaded
+    if xy_train is None or xy_test is None:
+        print(f" - Test and train was missing for {ispecies}: {imodel}")
+        return []
+
+    rando = "site_id"
+    target = "target"
+
+    ytrain = xy_train["target"]
+    ytest = xy_test["target"]
+
+    # Get the random effects column
+    rando = "site_id"
+    rtrain = xy_train[rando]
+    rtest = xy_test[rando]
+
+    # Reduce the xtrain and xtest to only predictors
+    xtrain = xy_train.drop(columns=[target, rando]).copy()
+    xtest = xy_test.drop(columns=[target, rando]).copy()
+    preds = xtrain.columns.tolist()
+
+    # Get spei and temp columns
+    spei_var = get_var_from_category(preds, "SPEI")
+    temp_var = get_var_from_category(preds, "Temperature")
+
+    # Invert SPEI for easier interpretation
+    if spei_var is not None:
+        xtrain[spei_var] = -xtrain[spei_var]
+        xtest[spei_var] = -xtest[spei_var]
+    
+    # Add spei-temp interaction (only if main effects are present)
+    if not rfe_with_interactions and add_spei_temp_interaction: 
+        if spei_var is not None and temp_var is not None:
+            xtrain[f"{spei_var}:{temp_var}"] = xtrain[spei_var].copy() * xtrain[temp_var].copy()
+            xtest[f"{spei_var}:{temp_var}"] = xtest[spei_var].copy() * xtest[temp_var].copy()
+            preds = preds + [f"{spei_var}:{temp_var}"]
+            
+    # Normalize the data
+    scaler = MinMaxScaler()  # StandardScaler()
+    xtrain[preds] = scaler.fit_transform(xtrain[preds])
+    xtest[preds] = scaler.transform(xtest[preds])
+    
+    # Add quadratic and logarithmic derivatives (only if main effects are present)
+    if add_spei_temp_derivatives: 
+        if spei_var is not None:
+            xtrain[f"{spei_var}_sq"] = xtrain[spei_var].copy() * xtrain[spei_var].copy()
+            xtrain[f"{spei_var}_log"] = np.log1p(xtrain[spei_var].copy())
+            
+            xtest[f"{spei_var}_sq"] = xtest[spei_var].copy() * xtest[spei_var].copy()
+            xtest[f"{spei_var}_log"] = np.log1p(xtest[spei_var].copy())
+            
+            preds = preds + [f"{spei_var}_sq", f"{spei_var}_log", f"{temp_var}_sq", f"{temp_var}_log"]
+            
+        if temp_var is not None:
+            xtrain[f"{temp_var}_sq"] = xtrain[temp_var].copy() * xtrain[temp_var].copy()
+            xtrain[f"{temp_var}_log"] = np.log1p(xtrain[temp_var].copy())
+            
+            xtest[f"{temp_var}_sq"] = xtest[temp_var].copy() * xtest[temp_var].copy()
+            xtest[f"{temp_var}_log"] = np.log1p(xtest[temp_var].copy())
+            
+            preds = preds + [f"{spei_var}_sq", f"{spei_var}_log", f"{temp_var}_sq", f"{temp_var}_log"]
+    
+    # return xtrain, xtest # ! DEBUG
+    
+    # Calculate basic statistics
+    xry_train = xtrain.describe().T  # Transpose for easier manipulation
+    xry_train['percent_missing'] = xtrain.isna().mean() * 100
+    xry_train = xry_train.reset_index().rename(columns={'index': 'variable'})
+    xry_test = xtest.describe().T  # Transpose for easier manipulation
+    xry_test['percent_missing'] = xtest.isna().mean() * 100
+    xry_test = xry_test.reset_index().rename(columns={'index': 'variable'})
+    if verbose:
+        display(" --- Summary of train data --- ")
+        display(xtrain.head())
+        display(xry_train)
+        display(" --- Summary of test data --- ")
+        display(xtest.head())
+        display(xry_test)
+            
+    # Check if feature elimination should be done
+    if do_rfe:
+        # Add all possible interactions to the train and test data
+        if rfe_with_interactions:
+            cols = xtrain.columns
+            for i, col in enumerate(cols):
+                for j in range(i + 1, len(cols)):
+                    col2 = cols[j]
+                    xtrain[f"{col}:{col2}"] = xtrain[col].copy() * xtrain[col2].copy()
+                    xtest[f"{col}:{col2}"] = xtest[col].copy() * xtest[col2].copy()
+                    
+                    # Normalize data
+                    xtrain[f"{col}:{col2}"] = scaler.fit_transform(xtrain[f"{col}:{col2}"])
+                    xtest[f"{col}:{col2}"] = scaler.transform(xtest[f"{col}:{col2}"])
+        
+        
+        if verbose:
+            display(" --- Start of RFE --- ")
+        rfe_results = glmm_rfe(
+        # rfe_results = glmm_rfe(
+            xtrain,
+            ytrain,
+            rtrain,
+            verbose,
+        )
+
+        # Plot AIC ~ n_features
+        rfe_results.plot(x="n_features", y=best_model_method)
+        plt.savefig(f"{base_dir}/{idir}/{modeldir}/rfe_plot-best_{best_model_method}.png")
+        if verbose:
+            plt.show()
+        plt.close()
+        
+        # Save the results
+        rfe_results.to_csv(f"{base_dir}/{idir}/{modeldir}/rfe_results.csv")
+
+        # Fit the best model to test and train again
+        if best_model_method == "BIC" or best_model_method == "AIC":
+            best_model = rfe_results[
+                rfe_results[best_model_method] == rfe_results[best_model_method].min()
+            ]
+        elif best_model_method == "PR" or best_model_method == "ROC":
+            best_model = rfe_results[
+                rfe_results[best_model_method] == rfe_results[best_model_method].max()
+            ]
+        
+        best_features = best_model["org_features"].values[0]
+        
+        # Check if a squared variable is present and if so add its main effect too
+        for f in best_features:
+            if "_sq" in f:
+                org_f = f.replace("_sq", "") # Get original variable name
+                if org_f not in best_features:
+                    best_features.append(org_f)
+        
+    else:
+        best_features = xtrain.columns.tolist()
+        
+    best_formula = (
+        "target ~ " + " + ".join(best_features) + f" + (1 | {rtrain.name})"
+    )
+    
+    # Save best formula to txt
+    with open(f"{base_dir}/{idir}/{modeldir}/_best_formula.txt", "w") as f:
+        f.write(best_formula)
+
+    model = Lmer(
+        best_formula,
+        data=pd.concat([ytrain, xtrain[best_features], rtrain], axis=1),
+        family="binomial",
+    )
+    model.fit(verbose=False)
+    model.coefs.to_csv(path_summary)
+    
+    if verbose:
+        print(f" ------- RESULTS ------- ")
+        print(f" - Best formula: {best_formula}")
+        print(f" - Best features: {best_features}")
+        print(f" - Model: {model}")
+        display(model.coefs)
+
+    # Evaluate the model
+    glmm_model_evaluation_classification(
+        glmm_model=model,
+        X_train=pd.concat([xtrain[best_features], rtrain], axis=1),
+        X_test=pd.concat([xtest[best_features], rtest], axis=1),
+        y_train=ytrain,
+        y_test=ytest,
+        prob_threshold=0.5,
+        save_directory=f"{base_dir}/{idir}/{modeldir}/",
+        verbose=verbose,
+    )
+
+    return []
+    
+def glmm_wrapper_loop(
+    df_in, 
+    do_rfe,
+    rfe_with_interactions,
+    add_spei_temp_interaction,
+    add_spei_temp_derivatives,
+    best_model_method,
+    path_prefix,
+    path_suffix,
+    return_all,
+    verbose,
+    skip_if_exists,
+):
+        
+    for i, row in df_in.reset_index(drop=True).iterrows():
+        if verbose:
+            print(f"🟡 Species: {row.species}\t | Model: {row.model}")
+            
+        glmm_run_per_species_and_model(
+            ispecies=row.species,
+            imodel=row.model,
+            do_rfe=do_rfe,
+            rfe_with_interactions=rfe_with_interactions,
+            add_spei_temp_interaction=add_spei_temp_interaction,
+            add_spei_temp_derivatives=add_spei_temp_derivatives,
+            best_model_method=best_model_method,
+            path_prefix=path_prefix,
+            path_suffix=path_suffix,
+            return_all=return_all,
+            verbose=verbose,
+            skip_if_exists=skip_if_exists,
+        )
+        clear_output()
+        
+    return []
+
+def get_category_from_var(var_to_match):
+
+    # Debug for mapping onto index of glmm output
+    if var_to_match == "(Intercept)":
+        return "Intercept"
+
+    # Read json file for dictionry
+    import json
+
+    with open(
+        "./model_runs/feature_category_dictionary.json",
+        "r",
+    ) as f:
+        tmp_dict = json.load(f)
+
+    # Clean spei var, just in case
+    var_to_match = var_to_match.replace("-", "_")
+
+    # Scan through all items and return the category
+    for category, items in tmp_dict.items():
+        for item in items:
+            item = item.replace("-", "_")
+            if item in var_to_match:
+                return category
+
+    raise ValueError(f"Variable '{var_to_match}' not found in dictionary!")
+
+
+def get_category_from_var_wrapper(var_to_match):
+    # Debug for interaction terms, needs to be split and checked twice
+    if ":" in var_to_match:
+        var1, var2 = var_to_match.split(":")
+        var_both = (
+            f"Interaction_{get_category_from_var(var1)}_{get_category_from_var(var2)}"
+        )
+        return var_both
+    else:
+        return get_category_from_var(var_to_match)
+
+def get_var_from_category(check_these_variables, category):
+    # Read json file for dictionry
+    import json
+
+    with open(
+        "./model_runs/feature_category_dictionary.json",
+        "r",
+    ) as f:
+        tmp_dict = json.load(f)
+
+    if category not in tmp_dict.keys():
+        raise ValueError(f"Category '{category}' not found in dictionary!")
+
+    # Compare check
+    if category == "Temperature":
+        search_for = ["tmoy", "tmax", "tmin"]
+    elif category == "SPEI":
+        search_for = ["spei"]
+    else:
+        search_for = tmp_dict[category]
+
+    for var in check_these_variables:
+        for search in search_for:
+            if search in var:
+                return var
+
+def glmm_get_spei_var(vars_in):
+    for v in vars_in:
+        if "spei" in v:
+            return v
+    return None
+
+
+def glmm_get_temp_var(vars_in):
+    v = None
+    for iv in vars_in:
+        if "tmoy" in iv:
+            v = iv
+        elif "tmax" in iv:
+            v = iv
+        elif "tmin" in iv:
+            v = iv
+    return v
+
+
+# ----
+
+def shap_run_new(
+  ispecies,
+  imodel,
+  run_interaction,
+  approximate,
+  test_or_train,
+  force_run,
+  verbose,  
+):
+    
+    idir = f"./model_runs/all_runs/{imodel}/{ispecies}"
+    iseed = imodel.split(" ")[0].split("_")[1]
+    shapdir = f"{idir}/shap"
+
+    if not os.path.exists(f"{idir}/final_model"):
+        print(f"Model not found: {idir}/final_model")
+        return []
+    
+    if approximate:
+        shapdir = f"{shapdir}/approximated"
+    else:
+        shapdir = f"{shapdir}/precise"
+
+    os.makedirs(shapdir, exist_ok=True)
+
+    # Load data
+    xtest = pd.read_csv(f"{idir}/final_model/X_test.csv", index_col=0)
+    ytest = pd.read_csv(f"{idir}/final_model/y_test.csv", index_col=0)
+    idtest = pd.read_csv(f"{idir}/treeid/X_test_treeid.csv", index_col=0)
+
+    xtrain = pd.read_csv(f"{idir}/final_model/X_train.csv", index_col=0)
+    ytrain = pd.read_csv(f"{idir}/final_model/y_train.csv", index_col=0)
+    idtrain = pd.read_csv(f"{idir}/treeid/X_train_treeid.csv", index_col=0)
+
+    # Load model
+    # Check if model exists
+    rf_path = f"./model_runs/all_runs/{imodel}/{ispecies}/final_model/rf_model.pkl"
+    rf = pd.read_pickle(rf_path)
+
+    if verbose:
+        print(shapdir)
+        print("")
+        print(f"{xtest.shape[0]} samples in test set X")
+        print(f"{ytest.shape[0]} samples in test set y")
+        print(f"{idtest.shape[0]} samples in test set id")
+        print("")
+        print(f"{xtrain.shape[0]} samples in train set X")
+        print(f"{ytrain.shape[0]} samples in train set y")
+        print(f"{idtrain.shape[0]} samples in train set id")
+
+    # Set data
+    if test_or_train == "train":
+        X_shap = xtrain.copy()
+    else:
+        X_shap = xtest.copy()
+
+    # Run SHAP
+    # Single effect
+    # Check if file exists
+    shap_file = f"{shapdir}/shap_values_{test_or_train}.pkl"
+    if os.path.isfile(shap_file) and not force_run:
+        if verbose:
+            print(" - Single Effect SHAP values already exist, skipping...")
+    else:
+        if verbose:
+            print(" - Calculating SHAP individual values")
+        explainer = shap.TreeExplainer(
+            rf,
+            X_shap,
+            feature_names=X_shap.columns,
+            approximate=approximate,
+        )
+        shap_values = explainer(
+            X_shap,
+            check_additivity=False,
+        )
+
+        # Save values
+        with open(shap_file, "wb") as file:
+            pickle.dump(shap_values, file)
+
+    # Get interaction values
+    if run_interaction:
+        shap_file = f"{shapdir}/shap_values_interaction_{test_or_train}.pkl"
+        # Check if file exists
+        if os.path.isfile(shap_file) and not force_run:
+            if verbose:
+                print(" - Interaction SHAP values already exist, skipping...")
+        else:
+            if verbose:
+                print(" - Calculating SHAP interaction values")
+            shap_values_interaction = shap.TreeExplainer(
+                rf,
+                approximate=approximate,
+                feature_names=X_shap.columns,
+            ).shap_interaction_values(X_shap)
+            
+            # Save it
+            with open(shap_file, "wb") as file:
+                pickle.dump(shap_values_interaction, file)
+    
+    return []
+                    
+                    
+                    
+def shap_run_new_loop(
+    df_in,
+    verbose=False,  
+    run_interaction=True,
+    approximate=False,
+    test_or_train="test",
+    force_run=False,
+    ):
+    
+    for i, row in df_in.reset_index(drop=True).iterrows():
+        if verbose:
+            print(f"🟡 Species: {row.species}\t | Model: {row.model}")
+        
+        shap_run_new(
+            ispecies=row.species,
+            imodel=row.model,
+            run_interaction=run_interaction,
+            approximate=approximate,
+            test_or_train="test",
+            force_run=force_run,
+            verbose=verbose,
+        )
+        
+        
+def shap_run_new_loop_mp(
+    df_in,
+    verbose=False,  
+    run_interaction=True,
+    approximate=False,
+    test_or_train="test",
+    force_run=False,
+    num_cores=10,
+    ):
+    
+    # Split into list
+    df_in = split_df_into_list_of_group_or_ns(df_in, "model")
+    # Run mp
+    print("Running in parallel...")
+    df_none = run_mp(
+        shap_run_new_loop,
+        arg_list=df_in,
+        num_cores=num_cores,
+        progress_bar=True,
+        verbose=verbose,
+        run_interaction=run_interaction,
+        approximate=approximate,
+        test_or_train=test_or_train,
+        force_run=force_run,
+    )
+    
+    
+def ax_dataset_boxplot(
+    ax=None,
+    all_dfs=None,
+    imps=None,
+    base_fontsize=12,
+    color_spei="blue",
+    color_temp="red",
+    color_rest="gray",
+    pos_spei=None,
+    pos_temp=None,
+    all_or_top9="all",
+    return_dfimp=False,
 ):
 
-    # ! Build model ----------------------------------------------------------------
-    # SMOTE oversampling
-    oversample = SMOTE(random_state=user_input["seed_nr"])
-    from sklearn.linear_model import LogisticRegression
+    # Reduce data if needed
+    if all_or_top9 == "top9":
+        top9 = [
+            "Fagus sylvatica",
+            "Quercus robur",
+            "Quercus petraea",
+            "Carpinus betulus",
+            "Castanea sativa",
+            "Quercus pubescens",
+            "Pinus sylvestris",
+            "Abies alba",
+            "Picea abies",
+        ]
+        all_dfs = all_dfs.query("species in @top9")
 
-    # Random Forest Classifier
-    if best_params is None:
-        # model = LogisticRegression(
-        #     random_state=user_input["seed_nr"],
-        #     n_jobs=-1,
-        #     class_weight="balanced",
-        # )
-        model = RandomForestClassifier(
-            n_estimators=nestimators,
-            random_state=user_input["seed_nr"],
-            n_jobs=-1,
-            class_weight="balanced",
-        )
-    else:
-        #  model = LogisticRegression(
-        #     random_state=user_input["seed_nr"],
-        #     n_jobs=-1,
-        #     class_weight="balanced",
-        #  )
+    df_imp = all_dfs[["species"] + imps].copy()
+    df_imp = calculate_weighted_mean_importance(df_imp, imps)
+    df_imp.columns = df_imp.columns.str.replace("weighted_mean_", "")
+    df_imp.columns = df_imp.columns.str.replace("mean_", "")
+    df_imp.columns = df_imp.columns.str.replace(" - Importance", "")
+    df_imp = df_imp.set_index("species")
 
-        model = RandomForestClassifier(
-            n_estimators=best_params["n_estimators"],
-            max_features=best_params["max_features"],
-            max_depth=best_params["max_depth"],
-            criterion=best_params["criterion"],
-            random_state=user_input["seed_nr"],
-            n_jobs=-1,
-            class_weight="balanced",
-        )
+    order = df_imp.median().sort_values(ascending=False).index
+    df_imp = df_imp[order]
+    
+    if return_dfimp:
+        return df_imp
 
-    # ! Run VI or CV with ALL DATA -------------------------------------------------------
-    # Option to train model on all input data without splitting before oversampling
-    if return_vi_from_all_data_model or return_cv_from_all_data_model:
+    # Get ticks
+    order_imp = []
+    mean_imp = df_imp.median()
 
-        # Impute all NAs as -9999
-        Xy = Xy.fillna(-9999)
-
-        # Split into response and predictors
-        X = Xy.drop(columns=["target", "test_train_strata"], errors="ignore")
-        y = Xy["target"]
-
-        # Apply oversampling to train set
-        X_train_over, y_train_over = oversample.fit_resample(X, y)
-
-        if return_vi_from_all_data_model:
-            # Train
-            model.fit(X_train_over, y_train_over)
-
-            # Variable Importance
-            df_vi = assessing_top_predictors(
-                rf_in=model,
-                ignore_these=["target", "test_train_strata"],
-                X_train_in=X_train_over,
-                dict_ohe_in=var_ohe_dict,
-                with_aggregation=True,
-                n_predictors=None,
-                verbose=verbose,
-            )
-
-            return df_vi
-
-        elif return_cv_from_all_data_model:
-            # Run CV
-            scoring = {
-                "f1": "f1_weighted",
-                "recall": "recall_weighted",
-                "precision": "precision_weighted",
-                "accuracy": "balanced_accuracy",
-                "roc_auc": "roc_auc_ovr_weighted",
-            }
-            scores = cross_validate(
-                model, X_train_over, y_train_over, scoring=scoring, cv=cv, n_jobs=-1
-            )
-            return scores
-
-    # ! Split data and run CV -------------------------------------------------------
-    if Xy is not None:
-
-        # Impute all NAs as -9999
-        Xy = Xy.fillna(-9999)
-
-        # Split into response and predictors
-        X = Xy.drop(columns=["target", "test_train_strata"], errors="ignore")
-        y = Xy["target"]
-
-        # Split into train and test
-        X_train, X_test, y_train, y_test = train_test_split(
-            X,
-            y,
-            test_size=user_input["test_split"],
-            stratify=y,
-            random_state=user_input["seed_nr"],
+    for i in range(mean_imp.shape[0]):
+        order_imp.append(
+            # f"{mean_imp.index[i]} ({mean_imp.values[i].round(1)}%)"
+            f"{mean_imp.index[i]}"
         )
 
-    else:
-        if (Xy_train is None) or (Xy_test is None):
-            raise ValueError(
-                "If no Xy is given, then Xy_train and Xy_test must be given!"
-            )
+    # Dictionary for renaming
+    rename_dict = {
+        "Light Competition": "Light competition",
+        "Temperature": "Temperature anomaly",
+        "SPEI": "CWB anomaly",
+        "Interaction_Temperature_SPEI": "Climate Change Inter.",
+        "Tree Size": "Tree size",
+        "Stand Structure": "Stand structure",
+        "Species Competition": "Species competition",
+        "Topography": "Topography",
+        "Management": "Management",
+        "Soil Water Conditions": "Soil water conditions",
+        "Soil Fertility": "Soil fertility",
+        "NDVI": "NDVI",
+    }
 
-        # Impute all NAs as -9999
-        Xy_train = Xy_train.fillna(-9999)
-        Xy_test = Xy_test.fillna(-9999)
+    df_imp.columns = df_imp.columns.map(rename_dict)
 
-        # Split into response and predictors
-        X_train = Xy_train.drop(
-            columns=["target", "test_train_strata"], errors="ignore"
-        )
-        y_train = Xy_train["target"]
+    category_dict = {
+        "Light competition": "Stand Structure",
+        "Temperature anomaly": "Climate Change",
+        "Interaction_Temperature_SPEI": "Climate Change",
+        "CWB anomaly": "Climate Change",
+        "Tree size": "Tree Structure",
+        "Stand structure": "Stand Structure",
+        "Species competition": "Stand Structure",
+        "Topography": "Topography",
+        "Management": "Management",
+        "Soil water conditions": "Soil Conditions",
+        "Soil fertility": "Soil Conditions",
+        "NDVI": "Forest Health",
+        "Climate Change Inter.": "Climate Change Inter.",
+        np.nan: "Other", 
+    }
 
-        X_test = Xy_test.drop(columns=["target", "test_train_strata"], errors="ignore")
-        y_test = Xy_test["target"]
+    # Define color palette for each category
+    color_dict = {
+        "Stand Structure": "#A13323",
+        "Climate Change": "#FBA346",
+        "Tree Structure": "#CCE8E6",
+        "Topography": "#A8BDC5",
+        "Management": "#6d7a7f",
+        "Soil Conditions": "#43619d",
+        "Forest Health": "#8BC34A",
+        "Other": "#c5d3d8", 
+        "Climate Change Inter.": "#c5d3d8",  
+    }
 
-    # Apply oversampling to train set
-    X_train_over, y_train_over = oversample.fit_resample(X_train, y_train)
-    X_test, y_test = oversample.fit_resample(X_test, y_test)
+    color_dict = {
+        "Climate Change": "#7B52AB",
+        "Stand Structure": "#c5d3d8",
+        "Tree Structure": "#c5d3d8",
+        "Topography": "#c5d3d8",
+        "Management": "#c5d3d8",
+        "Soil Conditions": "#c5d3d8",
+        "Forest Health": "#c5d3d8",
+        "Other": "#c5d3d8", 
+        "Climate Change Inter.": "#c5d3d8",  
+    }
+    
+    # Define order of the palette
+    palette_order = [
+            color_rest,
+            color_rest,
+            color_rest,
+            color_rest,
+            color_rest,
+            color_rest,
+            color_rest,
+            color_rest,
+            color_rest,
+            color_rest,
+            color_rest,
+            ]
+    
+    # Adjust coloring if needed 
+    print("🚨 if the coloring is incorrect, adjust by hand in function 'ax_dataset_boxplot()' ")
+    if pos_spei is not None and pos_temp is not None:
+        palette_order[pos_spei] = color_spei
+        palette_order[pos_temp] = color_temp
+    elif all_or_top9 == "all":
+        palette_order[1] = color_temp
+        palette_order[2] = color_spei
+    elif all_or_top9 == "top9":
+        palette_order[2] = color_temp
+        palette_order[4] = color_spei
+    elif all_or_top9 == "glmm_all":
+        palette_order[4] = color_temp
+        palette_order[5] = color_spei
+    elif all_or_top9 == "glmm_top9":
+        raise ValueError("Fix the palette order in the function!")
+        
 
-    # Create Stratified K-fold cross validation
-    # cv = RepeatedStratifiedKFold(
-    #     n_splits=cv_folds, n_repeats=cv_repeats, random_state=user_input["seed_nr"],
+    # Map the category to the features in df_imp
+    color_category = [color_dict[category_dict[col]] for col in df_imp.columns]
+
+    # Create boxplot with colors based on categories
+    ax_is_none = False
+    if ax is None:
+        ax_is_none = True
+        fig, ax = plt.subplots(figsize=(8, 3.5))
+
+    # Add jittered points (optional)
+    # sns.swarmplot(data=df_imp, orient="h", color="black", alpha=0.25)
+
+    # Outlier props
+    flierprops = dict(
+        marker="o",
+        markerfacecolor="black",
+        markersize=6,
+        linestyle="none",
+        alpha=0.5,
+    )
+
+    # Create boxplot
+    sns.boxplot(
+        data=df_imp,
+        ax=ax,
+        orient="h",
+        # palette=color_category,  # Apply colors based on the categories
+        palette=palette_order,
+        linewidth=1.5,
+        width=0.5,
+        flierprops=flierprops,
+    )
+
+    # sns.violinplot(
+    #     data=df_imp,
+    #     ax=ax,
+    #     orient="h",
+    #     palette=color_category,  # Apply colors based on the categories
+    #     inner="quartile",
     # )
-    cv = StratifiedKFold(
-        n_splits=cv_folds, random_state=user_input["seed_nr"], shuffle=True
+
+    # Change y-axis labels (optional, you can re-enable the commented order_imp section if needed)
+    # ax.set_yticklabels(order_imp)
+
+    # Layout adjustments
+    ax.set_xlabel(
+        "Importance (%)",
+        fontsize=base_fontsize * 1.2,
+        fontweight="bold",
+        labelpad=10,
     )
-    # Get y-labels
-    ylabels = sorted(y_train_over.unique())
+    ax.set_xlim(-0.5, 35)
+    ax.tick_params(axis="x", labelsize=base_fontsize * 1.0)
 
-    # Set Scores for Cross-Validation
-    if user_input["model_task"] == "binary":
-        scoring = {
-            "f1": "f1_weighted",
-            "recall": "recall_weighted",
-            "precision": "precision_weighted",
-            "accuracy": "balanced_accuracy",
-            "roc_auc": "roc_auc_ovr_weighted",
-        }
+    # Fix y-axis
+    ax.tick_params(axis="y", labelsize=base_fontsize * 1.1)
+    ax.set_ylabel(
+        "Feature Category",
+        fontsize=base_fontsize * 1.2,
+        fontweight="bold",
+        labelpad=10,
+    )
 
-    elif user_input["model_task"] == "multiclass":
-        scoring = {
-            "f1": "f1_weighted",
-            "recall": "recall_weighted",
-            "precision": "precision_weighted",
-            "accuracy": "balanced_accuracy",
-            "roc_auc": "roc_auc_ovr_weighted",
-        }
+    # Remove top and right axis
+    ax.spines["top"].set_visible(False)
+    ax.spines["right"].set_visible(False)
+
+    if ax_is_none:
+        plt.tight_layout()
+        plt.show()
     else:
-        raise ValueError(
-            "run_smote_classification(): Either 'binary' or 'multiclass' must be True!"
+        return ax
+    # plt.tight_layout()
+    # plt.savefig(f"{dir_patterns}/03_dataset_importance.png")
+    # plt.show()
+
+def calculate_weighted_mean_importance(df, importance_columns):
+    """
+    Calculate the weighted mean importance for each species and each importance column.
+
+    Args:
+    df (pd.DataFrame): Input DataFrame containing 'species' and importance columns.
+    importance_columns (list): List of importance column names.
+
+    Returns:
+    pd.DataFrame: DataFrame with weighted mean importance for each species and importance column.
+    """
+    # Initialize an empty DataFrame to store the results
+    result_df = pd.DataFrame()
+
+    # Iterate over each importance column to calculate the weighted mean importance
+    for column in importance_columns:
+        # Group by species and calculate the sum of importance and the count of occurrences
+        species_grouped = df.groupby("species").agg(
+            total_importance=(column, "sum"), count=(column, "count")
         )
 
-    # Do CV
-    scores = cross_validate(
-        model, X_train_over, y_train_over, scoring=scoring, cv=cv, n_jobs=-1
-    )
-
-    # Train
-    model.fit(X_train_over, y_train_over)
-
-    # Test
-    if return_eval:
-        model_evaluation_classification(
-            model,
-            X_train_over,
-            y_train_over,
-            X_test,
-            y_test,
-            save_directory=save_directory,
+        # Calculate the weighted mean importance for each species
+        species_grouped[f"weighted_mean_{column}"] = (
+            species_grouped["total_importance"] / species_grouped["count"]
         )
 
-    # Variable Importance
-    df_vi = assessing_top_predictors(
-        rf_in=model,
-        ignore_these=["target", "test_train_strata"],
-        X_train_in=X_train_over,
-        dict_ohe_in=var_ohe_dict,
-        with_aggregation=True,
-        # n_predictors=show_top_n,
-        verbose=False,
-        save_directory=save_directory,
-    )
+        # Keep only the weighted mean importance column
+        result_df[f"weighted_mean_{column}"] = species_grouped[
+            f"weighted_mean_{column}"
+        ]
 
-    # Reporting
-    if verbose:
-        print(" - CV Results:")
-        for key in scores.keys():
-            print(
-                f"  - {key}: {round(np.mean(scores[key]),3)} +/- {round(np.std(scores[key]),3)}"
+    return result_df.reset_index()
+
+
+def get_species_with_models(return_list_or_dict):
+    allRuns = glob.glob(
+        "../../notebooks/03_model_fitting_and_analysis/model_runs/all_runs/*/*"
+    )
+    speciesWithModels = {}
+    # Go through all runs
+    for run in allRuns:
+        # Get the species name
+        species = run.split("/")[-1]
+        # Check if final model for this species exists
+        if os.path.isfile(f"{run}/final_model_performance.csv"):
+            # If species is not in the dictionary add it and set the count to 1
+            if species not in speciesWithModels:
+                speciesWithModels[species] = 1
+            else:
+                speciesWithModels[species] += 1
+
+    # Get most recent species data
+    tmp = get_final_nfi_data_for_analysis(verbose=False).query(
+        "tree_state_change in ['alive_alive', 'alive_dead']"
+    )
+    
+    # Get normalized and non normalized counts
+    species = tmp["species_lat2"].value_counts()
+    species_norm = tmp["species_lat2"].value_counts(normalize=True)
+    
+    # Order dictionary based on occurrence
+    speciesWithModels = {
+        key: speciesWithModels[key]
+        for key in species_norm.keys().tolist()
+        if key in speciesWithModels
+    }
+    
+    # Return the dictionary or list
+    if return_list_or_dict == "list":
+        return list(speciesWithModels.keys())
+    elif return_list_or_dict == "dict":
+        return speciesWithModels
+    
+    
+def calculate_rf_performance(df_in, base_dir, skip_if_csv_exists=True):
+    for i, row in df_in.iterrows():
+        
+        # Get paths
+        path_rf = f"{base_dir}/{row.model}/{row.species}"
+        save_dir = f"{path_rf}/rf_performance"
+        os.makedirs(save_dir, exist_ok=True)
+
+        # Load actual target data and predicted probabilities
+        y_test = pd.read_csv(f"{path_rf}/final_model/y_test.csv", index_col=0)
+        y_test_pred_proba = pd.read_csv(
+            f"{path_rf}/final_model/y_test_proba.csv", index_col=0
+        )
+
+        y_train = pd.read_csv(f"{path_rf}/final_model/y_train.csv", index_col=0)
+        y_train_pred_proba = pd.read_csv(
+            f"{path_rf}/final_model/y_train_proba.csv", index_col=0
+        )
+
+        # Quality Control
+        if y_test.shape[0] != y_test_pred_proba.shape[0]:
+            raise ValueError(
+                f"Shapes for test do not match: {y_test.shape[0]} vs {y_test_pred_proba.shape[0]}"
+            )
+        if y_train.shape[0] != y_train.shape[0]:
+            raise ValueError(
+                f"Shapes for train do not match: {y_train.shape[0]} vs {y_train_pred_proba.shape[0]}"
             )
 
-    return model, scores, df_vi
+        # Turn all into series
+        y_test = y_test.iloc[:, 0]
+        y_train = y_train.iloc[:, 0]
+        y_test_pred_proba = y_test_pred_proba.iloc[:, 1]
+        y_train_pred_proba = y_train_pred_proba.iloc[:, 1]
 
-
-# -----------------------------------------------------------------------------------------------
+        # Define expected csv files
+        expected_roc = f"{save_dir}/roc_auc.csv"
+        expected_pr = f"{save_dir}/pr_auc.csv"
+        
+        if skip_if_csv_exists and os.path.isfile(expected_roc):
+            pass
+        else:
+            plot_roc_auc_both(
+                (y_train, y_train_pred_proba),
+                (y_test, y_test_pred_proba),
+                # save_directory=save_directory,
+                save_directory=save_dir,
+                show=False,
+                make_plot=False
+            )
+        
+        if skip_if_csv_exists and os.path.isfile(expected_pr):
+            pass
+        else:
+            plot_pr_auc_both(
+                (y_train, y_train_pred_proba),
+                (y_test, y_test_pred_proba),
+                # save_directory=save_directory,
+                save_directory=save_dir,
+                show=False,
+                make_plot=False
+            )

@@ -1,0 +1,3 @@
+# Data availability
+
+Due to file size limitation, the results from model fitting is not available for all species. To reproduce all results, download the `data` folder from [Zenodo](https://doi.org/10.5281/zenodo.14923701) and run all notebooks in `./notebooks/03_model_fitting_and_analysis/...`. For partial analysis, the model fitting results from the most common nine species (Fagus sylvatica, Quercus robur, Quercus petraea, Carpinus betulus, Castanea sativa, Quercus pubescens, Pinus sylvestris, Abies alba, Picea abies) download the `all_runs` folder provided on [Zenodo](https://doi.org/10.5281/zenodo.14923701) and add it to `./notebooks/03_model_fitting_and_analysis/model_runs/...`.

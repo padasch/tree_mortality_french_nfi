@@ -1,67 +1,61 @@
+# Standard library
+import datetime
 import os
-from sklearn.inspection import PartialDependenceDisplay
-
-from pyprojroot import here
+import random
+import re
+import sys
+import warnings
+from io import StringIO
 
 # Data wrangling
-import pandas as pd
 import numpy as np
-import random
+import pandas as pd
 import rasterstats
 
-# Data visualisation
-from ydata_profiling import ProfileReport
+# Data visualization
 import matplotlib.pyplot as plt
 import seaborn as sns
-import matplotlib.pyplot as plt
-from matplotlib.pylab import f
+from ydata_profiling import ProfileReport
 
 # Machine learning
-from sklearn.ensemble import RandomForestRegressor, RandomForestClassifier
-from sklearn.model_selection import train_test_split, GridSearchCV, StratifiedKFold
-from sklearn.metrics import r2_score, mean_squared_error, mean_absolute_error
-from sklearn.metrics import confusion_matrix, accuracy_score, classification_report
-from sklearn.preprocessing import OneHotEncoder
-from sklearn.impute import KNNImputer
-from sklearn.inspection import PartialDependenceDisplay
-
-import formulaic
 from scipy import stats
 from scipy.stats import pearsonr
 import statsmodels.api as sm
+import formulaic
+from sklearn.ensemble import RandomForestClassifier, RandomForestRegressor
+from sklearn.impute import KNNImputer
+from sklearn.inspection import PartialDependenceDisplay
+from sklearn.metrics import (
+    accuracy_score,
+    classification_report,
+    confusion_matrix,
+    mean_absolute_error,
+    mean_squared_error,
+    r2_score,
+)
+from sklearn.model_selection import GridSearchCV, StratifiedKFold, train_test_split
+from sklearn.preprocessing import OneHotEncoder
 
-# My functions
-import sys
-
+# Custom utilities
 sys.path.insert(0, "../../src")
+import chime
+from random_forest_utils import *
 from run_mp import *
 from utilities import *
-from random_forest_utils import *
 
 # Other
-from os import error
-import datetime
-from io import StringIO
-import re
-import warnings
-import chime
 from pyprojroot import here
 
+# Set chime theme
 chime.theme("material")
-
-# # Magic
-# %matplotlib inline
-# %load_ext autoreload
-# %autoreload 2
 
 # Function to initialize notebook with magic commands
 def init_notebook():
-    # Import IPython's get_ipython function to access the current IPython session
+    """Initializes Jupyter Notebook with useful magic commands."""
     from IPython import get_ipython
-    ipython = get_ipython()
 
-    # Magic commands
+    ipython = get_ipython()
     if ipython:
-        ipython.run_line_magic('matplotlib', 'inline')
-        ipython.run_line_magic('load_ext', 'autoreload')
-        ipython.run_line_magic('autoreload', '2')
+        ipython.run_line_magic("matplotlib", "inline")
+        ipython.run_line_magic("load_ext", "autoreload")
+        ipython.run_line_magic("autoreload", "2")
