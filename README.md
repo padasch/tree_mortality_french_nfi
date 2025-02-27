@@ -67,7 +67,7 @@ This code was developed and executed on the following system specifications:
 ### Data Availability
 
 - Due to file size limitations, the raw data cannot be included in this repository.
-- The processed data required for model fitting, analysis, and figure generation can be downloaded from [Zenodo](https://doi.org/10.5281/zenodo.14923701).
+- The processed data required for model fitting, analysis, and figure generation can be downloaded from [Zenodo](https://zenodo.org/records/14941688?preview=1&token=eyJhbGciOiJIUzUxMiJ9.eyJpZCI6ImJhZGZjNTFhLTVlNGUtNDM5Ni1hYWRlLTViZDNjY2JlMTc2MyIsImRhdGEiOnt9LCJyYW5kb20iOiJmMzc5N2E0YjIyYjliNmNmOTA3OTk1MTQxMjkzNzBiNiJ9.RZatmIF_oKJpU2pKO6hg9trpF6jnj2aE4Gux-GVrcxwYXAiPUXDZNhggsxcUqG6g0loJQUYJi6iIFBnkoYK3Uw).
 - After downloading, place the `data` folder in the repository’s root directory.
 
 ### Running the Analysis
@@ -103,7 +103,7 @@ This code was developed and executed on the following system specifications:
      - `05_create_reprod_subset.ipynb` creates a reproducible data subset for the most common nine species.
 
 4. **Precomputed Results for Faster Analysis**
-   - The [Zenodo](https://doi.org/10.5281/zenodo.14923701) repository also provides precomputed model fitting results for the **nine most common species**.
+   - The [Zenodo](https://zenodo.org/records/14941688?preview=1&token=eyJhbGciOiJIUzUxMiJ9.eyJpZCI6ImJhZGZjNTFhLTVlNGUtNDM5Ni1hYWRlLTViZDNjY2JlMTc2MyIsImRhdGEiOnt9LCJyYW5kb20iOiJmMzc5N2E0YjIyYjliNmNmOTA3OTk1MTQxMjkzNzBiNiJ9.RZatmIF_oKJpU2pKO6hg9trpF6jnj2aE4Gux-GVrcxwYXAiPUXDZNhggsxcUqG6g0loJQUYJi6iIFBnkoYK3Uw) repository also provides precomputed model fitting results for the **nine most common species**.
    - Using this dataset, you can run `02_randomforests_analysis.ipynb` and `03_glmm_analysis.ipynb ` without delay.
    - Due to file size constraints, full model fitting results are not included but can be reproduced as described above.
    - To use the precomputed subset, place the `all_runs` folder inside: `notebooks/03_model_fitting_and_analysis/model_runs/`
