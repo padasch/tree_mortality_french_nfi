@@ -123,6 +123,7 @@ This code was developed and executed on the following system specifications:
 
 ## Directory Structure
 
+```
 ├── .here
 ├── LICENSE.md
 ├── README.md
@@ -174,3 +175,4 @@ This code was developed and executed on the following system specifications:
     ├── random_forest_utils.py
     ├── run_mp.py
     └── utilities.py
+```
