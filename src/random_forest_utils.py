@@ -4573,131 +4573,35 @@ def glmm_model_evaluation_classification(
     y_train_pred = pd.Series(y_train_pred)
     y_test_pred = pd.Series(y_test_pred)
 
-    # Save predictions, probabilities, and actuals to files
-    if save_directory is not None:
-        os.makedirs(f"{save_directory}", exist_ok=True)
+    # Save actual data, predicted data, and model
+    # if save_directory is not None:
+    #     os.makedirs(f"{save_directory}", exist_ok=True)
 
-        # Save predictions - binary
-        y_train_pred.to_csv(f"{save_directory}/y_train_pred.csv")
-        y_test_pred.to_csv(f"{save_directory}/y_test_pred.csv")
+    #     # Save predictions - binary
+    #     y_train_pred.to_csv(f"{save_directory}/y_train_pred.csv")
+    #     y_test_pred.to_csv(f"{save_directory}/y_test_pred.csv")
 
-        # Save predictions - probabilities
-        pd.DataFrame(y_train_pred_proba, columns=["predicted_proba"]).to_csv(
-            f"{save_directory}/y_train_proba.csv"
-        )
-        pd.DataFrame(y_test_pred_proba, columns=["predicted_proba"]).to_csv(
-            f"{save_directory}/y_test_proba.csv"
-        )
+    #     # Save predictions - probabilities
+    #     pd.DataFrame(y_train_pred_proba, columns=["predicted_proba"]).to_csv(
+    #         f"{save_directory}/y_train_proba.csv"
+    #     )
+    #     pd.DataFrame(y_test_pred_proba, columns=["predicted_proba"]).to_csv(
+    #         f"{save_directory}/y_test_proba.csv"
+    #     )
 
-        # Save actuals
-        y_train.to_csv(f"{save_directory}/y_train.csv")
-        y_test.to_csv(f"{save_directory}/y_test.csv")
+    #     # Save actuals
+    #     y_train.to_csv(f"{save_directory}/y_train.csv")
+    #     y_test.to_csv(f"{save_directory}/y_test.csv")
 
-        # Save features
-        X_train.to_csv(f"{save_directory}/X_train.csv")
-        X_test.to_csv(f"{save_directory}/X_test.csv")
+    #     # Save features
+    #     X_train.to_csv(f"{save_directory}/X_train.csv")
+    #     X_test.to_csv(f"{save_directory}/X_test.csv")
 
-        # Save the model
-        with open(f"{save_directory}/glmm_model.pkl", "wb") as file:
-            pickle.dump(glmm_model, file)
+    #     # Save the model
+    #     with open(f"{save_directory}/glmm_model.pkl", "wb") as file:
+    #         pickle.dump(glmm_model, file)
 
-    # Calculate confusion matrices
-    unique_labels = np.unique(np.concatenate((y_train, y_test)))
-    confusion_train = confusion_matrix(y_train, y_train_pred, labels=unique_labels)
-    confusion_test = confusion_matrix(y_test, y_test_pred, labels=unique_labels)
-
-    # Classification reports for both training and test data
-    report_train_dict = classification_report(
-        y_train, y_train_pred, digits=3, output_dict=True
-    )
-    report_test_dict = classification_report(
-        y_test, y_test_pred, digits=3, output_dict=True
-    )
-
-    report_train_txt = classification_report(y_train, y_train_pred, digits=3)
-    report_test_txt = classification_report(y_test, y_test_pred, digits=3)
-
-    # # Print training and testing information
-    # if verbose:
-    #     print("--- model_evaluation_classification():")
-    #     print(f"Number of training data points: {len(y_train)}")
-    #     print(f"Number of testing data points: {len(y_test)}")
-    #     print("\nTrain Classification Report:\n", report_train_txt)
-    #     print("\nTest Classification Report:\n", report_test_txt)
-
-    # Save reports
-    if save_directory is not None:
-        with open(f"{save_directory}/classification_report_train.txt", "w") as f:
-            f.write(report_train_txt)
-        with open(f"{save_directory}/classification_report_test.txt", "w") as f:
-            f.write(report_test_txt)
-
-    # Get max f1 for scaling bar plots
-    class_scores_train = [
-        report_train_dict[str(label)][metric] for label in unique_labels
-    ]
-    class_scores_test = [
-        report_test_dict[str(label)][metric] for label in unique_labels
-    ]
-
-    metric_max = max([0] + class_scores_train + class_scores_test)
-
-    # Baseline performance (predicting 0 for all samples)
-    y_baseline = pd.Series([0] * len(y_test))
-
-    scores_baseline = bootstrap_classification_metric(
-        y_test,
-        y_baseline,
-        metrics=["accuracy", "precision", "recall", "roc_auc"],
-        n_bootstraps=100,
-    )
-
-    scores_test = bootstrap_classification_metric(
-        y_test,
-        y_test_pred,
-        metrics=["accuracy", "precision", "recall", "roc_auc"],
-        n_bootstraps=100,
-    )
-
-    scores_train = bootstrap_classification_metric(
-        y_train,
-        y_train_pred,
-        metrics=["accuracy", "precision", "recall", "roc_auc"],
-        n_bootstraps=100,
-    )
-
-    # Save baseline and other results to files
-    if save_directory is not None:
-        scores_baseline.to_csv(
-            f"{save_directory}/final_model_scores_baseline.csv", index=False
-        )
-        scores_train.to_csv(
-            f"{save_directory}/final_model_scores_train.csv", index=False
-        )
-        scores_test.to_csv(f"{save_directory}/final_model_scores_test.csv", index=False)
-
-    df_metrics = pd.DataFrame(
-        {
-            "metric": "roc_auc",
-            "train_boot_mean": scores_train["roc_auc"].iloc[0],
-            "train_boot_sd": scores_train["roc_auc"].iloc[1],
-            "test_boot_mean": scores_test["roc_auc"].iloc[0],
-            "test_boot_sd": scores_test["roc_auc"].iloc[1],
-        },
-        index=[0],
-    )
-
-    if save_directory is not None:
-        df_metrics.to_csv(f"{save_directory}/classification_metrics.csv", index=False)
-
-    # ! Plot
-    # Set the figure size
-    plt.figure(figsize=(8, 4))
-
-    # Combine confusion matrices to find common color scale
-    combined_confusion = np.maximum(confusion_train, confusion_test)
-
-    # Plot ROC AUC curve
+    # Calculate Performance
     plot_roc_auc_both(
         (y_train, y_train_pred_proba),
         (y_test, y_test_pred_proba),
@@ -4820,22 +4724,12 @@ def glmm_rfe(
 def glmm_run_per_species_and_model(
     ispecies,
     imodel,
-    do_rfe=False,
-    rfe_with_interactions=False,
-    add_spei_temp_interaction=False,
-    add_spei_temp_derivatives=False,
-    best_model_method="None",
     path_prefix=None,
     path_suffix=None,
     return_all=False,
     verbose=False,
     skip_if_exists=True,
 ):
-    
-    if do_rfe:
-        if best_model_method not in ["AIC", "BIC", "PR", "ROC"]:
-            chime.error()
-            raise ValueError("best_model_method must be one of 'AIC', 'BIC', 'PR', 'ROC'")
     
     if path_prefix is None or path_suffix is None:
         raise ValueError(f"Path input is not correct, needs to be specified!")
@@ -4847,8 +4741,6 @@ def glmm_run_per_species_and_model(
     base_dir = path_prefix
     idir = f"{imodel}/{ispecies}"
     modeldir = path_suffix
-    if do_rfe:
-        modeldir = f"{modeldir}/best_model_{best_model_method}"
         
     os.makedirs(
         f"{base_dir}/{idir}/{modeldir}",
@@ -4868,9 +4760,7 @@ def glmm_run_per_species_and_model(
         )
         
     # Get data
-    xy_train = glmm_get_data(
-        "train", base_dir=base_dir, idir=idir, drop_smote=True, verbose=verbose
-    )
+    xy_train = glmm_get_data("train", base_dir=base_dir, idir=idir, drop_smote=True, verbose=verbose)
     xy_test = glmm_get_data("test", base_dir=base_dir, idir=idir, verbose=verbose)
 
     # Check if data was loaded
@@ -4903,37 +4793,10 @@ def glmm_run_per_species_and_model(
         xtrain[spei_var] = -xtrain[spei_var]
         xtest[spei_var] = -xtest[spei_var]
     
-    # Add spei-temp interaction (only if main effects are present)
-    if not rfe_with_interactions and add_spei_temp_interaction: 
-        if spei_var is not None and temp_var is not None:
-            xtrain[f"{spei_var}:{temp_var}"] = xtrain[spei_var].copy() * xtrain[temp_var].copy()
-            xtest[f"{spei_var}:{temp_var}"] = xtest[spei_var].copy() * xtest[temp_var].copy()
-            preds = preds + [f"{spei_var}:{temp_var}"]
-            
     # Normalize the data
     scaler = MinMaxScaler()  # StandardScaler()
     xtrain[preds] = scaler.fit_transform(xtrain[preds])
     xtest[preds] = scaler.transform(xtest[preds])
-    
-    # Add quadratic and logarithmic derivatives (only if main effects are present)
-    if add_spei_temp_derivatives: 
-        if spei_var is not None:
-            xtrain[f"{spei_var}_sq"] = xtrain[spei_var].copy() * xtrain[spei_var].copy()
-            xtrain[f"{spei_var}_log"] = np.log1p(xtrain[spei_var].copy())
-            
-            xtest[f"{spei_var}_sq"] = xtest[spei_var].copy() * xtest[spei_var].copy()
-            xtest[f"{spei_var}_log"] = np.log1p(xtest[spei_var].copy())
-            
-            preds = preds + [f"{spei_var}_sq", f"{spei_var}_log", f"{temp_var}_sq", f"{temp_var}_log"]
-            
-        if temp_var is not None:
-            xtrain[f"{temp_var}_sq"] = xtrain[temp_var].copy() * xtrain[temp_var].copy()
-            xtrain[f"{temp_var}_log"] = np.log1p(xtrain[temp_var].copy())
-            
-            xtest[f"{temp_var}_sq"] = xtest[temp_var].copy() * xtest[temp_var].copy()
-            xtest[f"{temp_var}_log"] = np.log1p(xtest[temp_var].copy())
-            
-            preds = preds + [f"{spei_var}_sq", f"{spei_var}_log", f"{temp_var}_sq", f"{temp_var}_log"]
     
     # return xtrain, xtest # ! DEBUG
     
@@ -4952,62 +4815,6 @@ def glmm_run_per_species_and_model(
         display(xtest.head())
         display(xry_test)
             
-    # Check if feature elimination should be done
-    if do_rfe:
-        # Add all possible interactions to the train and test data
-        if rfe_with_interactions:
-            cols = xtrain.columns
-            for i, col in enumerate(cols):
-                for j in range(i + 1, len(cols)):
-                    col2 = cols[j]
-                    xtrain[f"{col}:{col2}"] = xtrain[col].copy() * xtrain[col2].copy()
-                    xtest[f"{col}:{col2}"] = xtest[col].copy() * xtest[col2].copy()
-                    
-                    # Normalize data
-                    xtrain[f"{col}:{col2}"] = scaler.fit_transform(xtrain[f"{col}:{col2}"])
-                    xtest[f"{col}:{col2}"] = scaler.transform(xtest[f"{col}:{col2}"])
-        
-        
-        if verbose:
-            display(" --- Start of RFE --- ")
-        rfe_results = glmm_rfe(
-        # rfe_results = glmm_rfe(
-            xtrain,
-            ytrain,
-            rtrain,
-            verbose,
-        )
-
-        # Plot AIC ~ n_features
-        rfe_results.plot(x="n_features", y=best_model_method)
-        plt.savefig(f"{base_dir}/{idir}/{modeldir}/rfe_plot-best_{best_model_method}.png")
-        if verbose:
-            plt.show()
-        plt.close()
-        
-        # Save the results
-        rfe_results.to_csv(f"{base_dir}/{idir}/{modeldir}/rfe_results.csv")
-
-        # Fit the best model to test and train again
-        if best_model_method == "BIC" or best_model_method == "AIC":
-            best_model = rfe_results[
-                rfe_results[best_model_method] == rfe_results[best_model_method].min()
-            ]
-        elif best_model_method == "PR" or best_model_method == "ROC":
-            best_model = rfe_results[
-                rfe_results[best_model_method] == rfe_results[best_model_method].max()
-            ]
-        
-        best_features = best_model["org_features"].values[0]
-        
-        # Check if a squared variable is present and if so add its main effect too
-        for f in best_features:
-            if "_sq" in f:
-                org_f = f.replace("_sq", "") # Get original variable name
-                if org_f not in best_features:
-                    best_features.append(org_f)
-        
-    else:
         best_features = xtrain.columns.tolist()
         
     best_formula = (
@@ -5015,14 +4822,16 @@ def glmm_run_per_species_and_model(
     )
     
     # Save best formula to txt
-    with open(f"{base_dir}/{idir}/{modeldir}/_best_formula.txt", "w") as f:
-        f.write(best_formula)
-
+    # with open(f"{base_dir}/{idir}/{modeldir}/_best_formula.txt", "w") as f:
+        # f.write(best_formula)
+        
+    # Fit model
     model = Lmer(
         best_formula,
         data=pd.concat([ytrain, xtrain[best_features], rtrain], axis=1),
         family="binomial",
     )
+    
     model.fit(verbose=False)
     model.coefs.to_csv(path_summary)
     
@@ -5040,7 +4849,6 @@ def glmm_run_per_species_and_model(
         X_test=pd.concat([xtest[best_features], rtest], axis=1),
         y_train=ytrain,
         y_test=ytest,
-        prob_threshold=0.5,
         save_directory=f"{base_dir}/{idir}/{modeldir}/",
         verbose=verbose,
     )
@@ -5050,10 +4858,6 @@ def glmm_run_per_species_and_model(
 def glmm_wrapper_loop(
     df_in, 
     do_rfe,
-    rfe_with_interactions,
-    add_spei_temp_interaction,
-    add_spei_temp_derivatives,
-    best_model_method,
     path_prefix,
     path_suffix,
     return_all,
@@ -5068,11 +4872,6 @@ def glmm_wrapper_loop(
         glmm_run_per_species_and_model(
             ispecies=row.species,
             imodel=row.model,
-            do_rfe=do_rfe,
-            rfe_with_interactions=rfe_with_interactions,
-            add_spei_temp_interaction=add_spei_temp_interaction,
-            add_spei_temp_derivatives=add_spei_temp_derivatives,
-            best_model_method=best_model_method,
             path_prefix=path_prefix,
             path_suffix=path_suffix,
             return_all=return_all,
@@ -5581,9 +5380,13 @@ def calculate_weighted_mean_importance(df, importance_columns):
 
 
 def get_species_with_models(return_list_or_dict):
-    allRuns = glob.glob(
-        "../../notebooks/03_model_fitting_and_analysis/model_runs/all_runs/*/*"
-    )
+    
+    runs_dir = "all_runs_ALL"
+    allRuns = f"../../notebooks/03_model_fitting_and_analysis/model_runs/{runs_dir}/*/*"
+    print(f" - Looking for species with models in: {allRuns}")
+    
+    allRuns = glob.glob(allRuns)
+    
     speciesWithModels = {}
     # Go through all runs
     for run in allRuns:
@@ -5612,6 +5415,8 @@ def get_species_with_models(return_list_or_dict):
         for key in species_norm.keys().tolist()
         if key in speciesWithModels
     }
+    
+    print(f" - Found {len(speciesWithModels)} species with models")
     
     # Return the dictionary or list
     if return_list_or_dict == "list":
