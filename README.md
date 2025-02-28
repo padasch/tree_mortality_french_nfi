@@ -75,30 +75,30 @@ This code was developed and executed on the following system specifications:
 1. **Preprocessing National Forest Inventory (NFI) Data**
    - The first step in the analysis is processing the NFI data using the notebooks inside `notebooks/01_process_nfi_data/`:
      - `01_clean_raw_nfi_data.ipynb` cleans the raw NFI dataset.
-     - `02_calculate_mortality.ipynb` calculates mortality metrics.
+     - `02_calculate_mortality.ipynb` calculates temporal and spatial mortality metrics.
 
 2. **Feature Extraction**
    - Environmental and structural features are extracted using `notebooks/02_collect_features/`:
-     - `01_get_forest_structure.ipynb` to extract forest structure data.
-     - `02_get_management.ipynb` to integrate management practices.
-     - `03_get_topography.ipynb` to retrieve topographical data.
-     - `04_get_soil.ipynb` for soil-related features.
-     - `10_get_climate.ipynb` and `11_get_spei.ipynb` for climate and SPEI data.
-     - `20_get_land_cover.ipynb` and `21_get_landsat_ndvi.ipynb` for remote sensing data.
-     - `30_get_hansen2013highresolution_treecover.ipynb` for tree cover data.
-     - `40_get_niinements_tolerance.ipynb` for species tolerance levels.
-   - The SPEI data calculation is done in `notebooks/02_collect_features/R (for spei data only)`, where:
-     - The scripts inside `functions/` perform preprocessing.
-     - The main project is `ifn_analysis.Rproj`.
-     - The `scripts/` folder contains execution scripts.
-     - The `output/` folder stores intermediate results.
+     - `01_get_forest_structure.ipynb` extracts forest structure features from the NFI data.
+     - `02_get_management.ipynb` extracts management features from the NFI data.
+     - `03_get_topography.ipynb` extracts topographical features from the digital elevation model.
+     - `04_get_soil.ipynb` extracts soil-related features.
+     - `10_get_climate.ipynb` and `11_get_spei.ipynb` wrangles and extracts temperature and SPEI features.
+         - The SPEI data calculation from evapotranspiration and precipitation data is done in `notebooks/02_collect_features/R (for spei data only)`, where:
+         - The scripts inside `functions/` perform preprocessing.
+         - The main project is `ifn_analysis.Rproj`.
+         - The `scripts/` folder contains execution scripts.
+         - The `output/` folder stores intermediate results.
+     - `20_get_land_cover.ipynb` and `21_get_landsat_ndvi.ipynb` extracts NDVI features.
+     - `30_get_hansen2013highresolution_treecover.ipynb` extracts tree cover data.
+     - `40_get_niinements_tolerance.ipynb` extracts species tolerance data.
 
 3. **Model Fitting and Analysis**
    - Model fitting and analysis are done inside `notebooks/03_model_fitting_and_analysis/`:
-     - `01_model_fitting.ipynb` runs the main machine learning models
-         - On a "normal" computer, this can take several days. See comments in the notebook on how to parallelize across multiple notebooks
+     - `01_model_fitting.ipynb` fits all random forest, including the recursive feature selection, and calculates model performance and SHAP values.
+         - *🚨 Important: On a "normal" computer, this can take **several days**. See comments in the notebook on how to parallelize across multiple notebooks.*
      - `02_randomforests_analysis.ipynb` analyzes random forest model results.
-     - `03_glmm_analysis.ipynb` performs generalized logistic mixed model fitting and analysis.
+     - `03_glmm_analysis.ipynb` performs generalized logistic mixed model fitting, analysis, and comparison to random forest models.
      - `04_gather_output.ipynb` collects model outputs into `output/`.
      - `05_create_reprod_subset.ipynb` creates a reproducible data subset for the most common nine species.
 
@@ -115,18 +115,16 @@ This code was developed and executed on the following system specifications:
 
 ### File Formats & Compatibility
 
-- Data files are stored in the `.feather` format for efficiency.
-- These files can be opened using:
-  - **Python**:
-    ```python
-    import pandas as pd
-    df = pd.read_feather("filename.feather")
-    ```
-  - **R**:
-    ```r
-    library(feather)
-    df <- read_feather("filename.feather")
-    ```
+- Large data files and models are stored in the `.feather` or `.pkl` format for efficiency and models are stored in the `.pkl` format. They can beopened with (make sure the `requirements.txt` is installed for dependencies):
+  ```python
+  # Feather files:
+  loaded_file = pd.read_feather(filepath)
+
+  # Pickle files:
+  with open(filepath, "rb") as file:
+       loaded_file = pickle.load(file)
+  ```
+
 
 ---
 
