@@ -5381,7 +5381,7 @@ def calculate_weighted_mean_importance(df, importance_columns):
 
 def get_species_with_models(return_list_or_dict):
     
-    runs_dir = "all_runs_ALL"
+    runs_dir = "all_runs"
     allRuns = f"../../notebooks/03_model_fitting_and_analysis/model_runs/{runs_dir}/*/*"
     print(f" - Looking for species with models in: {allRuns}")
     
