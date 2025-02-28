@@ -1,3 +1,3 @@
 # Data availability
 
-Due to file size limitations, the data to for the raw data wrangling is not available. The cleaned data is available on [Zenodo](https://doi.org/10.5281/zenodo.14923701).
+Due to file size limitations, the data to for the raw data wrangling is not available. The cleaned data is available on [Zenodo](https://zenodo.org/records/14941688?preview=1&token=eyJhbGciOiJIUzUxMiJ9.eyJpZCI6ImJhZGZjNTFhLTVlNGUtNDM5Ni1hYWRlLTViZDNjY2JlMTc2MyIsImRhdGEiOnt9LCJyYW5kb20iOiJmMzc5N2E0YjIyYjliNmNmOTA3OTk1MTQxMjkzNzBiNiJ9.RZatmIF_oKJpU2pKO6hg9trpF6jnj2aE4Gux-GVrcxwYXAiPUXDZNhggsxcUqG6g0loJQUYJi6iIFBnkoYK3Uw).
