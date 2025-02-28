@@ -42,7 +42,7 @@ This code was developed and executed on the following system specifications:
    source venv/bin/activate  # For macOS/Linux
    venv\Scripts\activate  # For Windows (if applicable)
    ```
-5. Install required libraries:
+5. Install required libraries (may take several minutes):
    ```bash
    pip install -r requirements.txt
    ```
