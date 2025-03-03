@@ -1,10 +1,10 @@
 # Analysis of Tree Mortality Drivers Across France
 
-This repository contains the data processing, feature engineering, and machine learning analysis code for the study "Flush to Crush: The Paradox of Favourable Springs Leading to Tree Mortality." We analyzed over 600,000 trees from the French National Forest Inventory (2015–2023) to investigate climate-driven mortality trends using explainable machine learning.
+This repository contains the data processing, feature engineering, and machine learning analysis code for the study "Flush to Crush: The Paradox of Favourable Springs Leading to Tree Mortality." We analyzed over 500,000 trees from the French National Forest Inventory (2015–2023) to investigate climate-driven mortality trends using explainable machine learning.
 
 > [Citation will be added upon publication]
 
-## Table of Content
+## Table of Contents
 
 * [Code and Software](#code-and-software)
     + [System Requirements](#system-requirements)
