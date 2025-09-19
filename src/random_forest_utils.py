@@ -135,7 +135,7 @@ def run_rfecv_treemort(
     features_to_remove_above15 = 1
     features_to_remove_below15 = 1
 
-    min_features_per_category = 2
+    min_features_per_category = user_input["min_features_per_category"]
 
     # Empty lists
     vars_to_keep_as_min_per_category = []
@@ -218,6 +218,7 @@ def run_rfecv_treemort(
                 rnd_seed=user_input["seed_nr"],
                 verbose=verbose,
                 save_directory=None,
+                smote_k=user_input["smote_k"],
             )
         elif user_input["method_validation"] == "oob":
             rf, sco, imp = SMOTE_oob(
@@ -230,6 +231,7 @@ def run_rfecv_treemort(
                 rnd_seed=user_input["seed_nr"],
                 verbose=verbose,
                 save_directory=None,
+                smote_k=user_input["smote_k"],
             )
         else:
             raise ValueError(f"Failed during RFE - Invalid method_validation! Got: {user_input['method_validation']}")
@@ -457,6 +459,7 @@ def SMOTE_cv(
     rnd_seed=42,
     verbose=True,
     save_directory=None,
+    smote_k=5
 ):
     # ! INPUT CHECKS --------------------------------------------------------------
     if verbose:
@@ -480,8 +483,6 @@ def SMOTE_cv(
     
     # ! SETUP ---------------------------------------------------------------------
     # Build model
-    sm = SMOTE(random_state=rnd_seed)
-    
     rf = RandomForestClassifier(
         n_estimators=rf_params["n_estimators"],
         max_features=rf_params["max_features"],
@@ -517,9 +518,20 @@ def SMOTE_cv(
         y_train, y_val = y.iloc[train_index], y.iloc[val_index]
 
         # Apply SMOTE
-        X_train, y_train = sm.fit_resample(X_train, y_train)
+        X_train, y_train = apply_smote(
+            X=X_train,
+            y=y_train,
+            seed=rnd_seed,
+            k=smote_k,
+        )
+        
         if smote_on_test:
-            X_val, y_val = sm.fit_resample(X_val, y_val)
+            X_val, y_val = apply_smote(
+                X=X_val,
+                y=y_val,
+                seed=rnd_seed,
+                k=smote_k,
+            )
 
         # Train model
         rf.fit(X_train, y_train)
@@ -626,6 +638,7 @@ def SMOTE_oob(
     rnd_seed=42,
     verbose=True,
     save_directory=None,
+    smote_k=5,
 ):
     # ! INPUT CHECKS --------------------------------------------------------------
     if verbose:
@@ -656,8 +669,12 @@ def SMOTE_oob(
     y = Xy_all["target"]
     
     # Apply SMOTE
-    sm = SMOTE(random_state=rnd_seed)
-    X, y = sm.fit_resample(X, y)
+    X, y = apply_smote(
+        X=X,
+        y=y,
+        k=smote_k,
+        seed=rnd_seed,
+    )
     
     # ! Tuning ---------------------------------------------------------------------
     if do_tuning:
@@ -1099,6 +1116,7 @@ def model_evaluation_classification(
     metric="f1-score",
     verbose=True,
     make_plots=False,
+    save_only_predictions=True,
 ):
     # Predict probabilities for train and test data
     y_train_proba = rf_model.predict_proba(X_train)
@@ -1125,17 +1143,18 @@ def model_evaluation_classification(
         pd.DataFrame(y_train_proba, columns=["0", "1"]).to_csv(f"{save_directory}/final_model/y_train_proba.csv")
         pd.DataFrame(y_test_proba, columns=["0", "1"]).to_csv(f"{save_directory}/final_model/y_test_proba.csv")
         
-        # Actuals
-        y_train.to_csv(f"{save_directory}/final_model/y_train.csv")
-        y_test.to_csv(f"{save_directory}/final_model/y_test.csv")
+        if not save_only_predictions:
+            # Actuals
+            y_train.to_csv(f"{save_directory}/final_model/y_train.csv")
+            y_test.to_csv(f"{save_directory}/final_model/y_test.csv")
+            
+            # Features
+            X_train.to_csv(f"{save_directory}/final_model/X_train.csv")
+            X_test.to_csv(f"{save_directory}/final_model/X_test.csv")
         
-        # Features
-        X_train.to_csv(f"{save_directory}/final_model/X_train.csv")
-        X_test.to_csv(f"{save_directory}/final_model/X_test.csv")
-        
-        # Model
-        with open(f"{save_directory}/final_model/rf_model.pkl", "wb") as file:
-            pickle.dump(rf_model, file)
+            # Model
+            with open(f"{save_directory}/final_model/rf_model.pkl", "wb") as file:
+                pickle.dump(rf_model, file)
 
     # Get unique class labels from the target variable
     unique_labels = np.unique(np.concatenate((y_train, y_test)))
@@ -1688,8 +1707,6 @@ def run_smote_classification(
         
 
     # ! Build model ----------------------------------------------------------------
-    oversample = SMOTE(random_state=user_input["seed_nr"])
-
     model = RandomForestClassifier(
         n_estimators=rf_params["n_estimators"],
         max_features=rf_params["max_features"],
@@ -1728,9 +1745,20 @@ def run_smote_classification(
             y_train_cv, y_val = y_train.iloc[train_index], y_train.iloc[val_index]
 
             # Apply SMOTE only to the training data
-            X_train_cv, y_train_cv = oversample.fit_resample(X_train_cv, y_train_cv)
+            X_train_cv, y_train_cv = apply_smote(
+                X=X_train_cv,
+                y=y_train_cv,
+                seed=user_input["seed_nr"],
+                k=user_input["smote_k"],
+            )
+            
             if smote_test:
-                X_val, y_val = oversample.fit_resample(X_val, y_val)
+                X_val, y_val = apply_smote(
+                    X=X_val,
+                    y=y_val,
+                    seed=user_input["seed_nr"],
+                    k=user_input["smote_k"],
+                )
 
             # Train model
             model.fit(X_train_cv, y_train_cv)
@@ -1757,7 +1785,13 @@ def run_smote_classification(
     # End CV
     elif do_cv == "oob":
         # Apply oversampling to train data
-        X_train, y_train = oversample.fit_resample(X_train, y_train)
+        X_train, y_train = apply_smote(
+            X=X_train,
+            y=y_train,
+            seed=user_input["seed_nr"],
+            k=user_input["smote_k"],
+        )
+        
         # Train model
         model.fit(X_train, y_train)
         # Get OOB
@@ -1808,8 +1842,13 @@ def run_smote_classification(
             print("\n - Evaluating model...")
 
         if smote_test:
-            X_test, y_test = oversample.fit_resample(X_test, y_test)
-
+            X_test, y_test = apply_smote(
+                X=X_test,
+                y=y_test,
+                seed=user_input["seed_nr"],
+                k=user_input["smote_k"],
+            )
+            
         model_evaluation_classification(
             rf_model=model,
             X_train=X_train,
@@ -4618,6 +4657,16 @@ def glmm_model_evaluation_classification(
         make_plot=False,
     )
     
+    rf_perfofmance_add_metrics_fixed_threshold(
+            (y_train, y_train_pred_proba),
+            (y_test, y_test_pred_proba),
+            save_directory=save_directory,
+            show=verbose,
+            make_plot=False,
+        )
+    
+    
+    
 def glmm_rfe(
     xtrain,
     ytrain,
@@ -4760,7 +4809,7 @@ def glmm_run_per_species_and_model(
         )
         
     # Get data
-    xy_train = glmm_get_data("train", base_dir=base_dir, idir=idir, drop_smote=True, verbose=verbose)
+    xy_train = glmm_get_data("train", base_dir=base_dir, idir=idir, drop_smote=False, verbose=verbose)
     xy_test = glmm_get_data("test", base_dir=base_dir, idir=idir, verbose=verbose)
 
     # Check if data was loaded
@@ -4815,8 +4864,8 @@ def glmm_run_per_species_and_model(
         display(xtest.head())
         display(xry_test)
             
-        best_features = xtrain.columns.tolist()
         
+    best_features = xtrain.columns.tolist()
     best_formula = (
         "target ~ " + " + ".join(best_features) + f" + (1 | {rtrain.name})"
     )
@@ -4857,7 +4906,6 @@ def glmm_run_per_species_and_model(
     
 def glmm_wrapper_loop(
     df_in, 
-    do_rfe,
     path_prefix,
     path_suffix,
     return_all,
@@ -4971,6 +5019,7 @@ def glmm_get_temp_var(vars_in):
 def shap_run_new(
   ispecies,
   imodel,
+  idir,
   run_interaction,
   approximate,
   test_or_train,
@@ -4978,7 +5027,8 @@ def shap_run_new(
   verbose,  
 ):
     
-    idir = f"./model_runs/all_runs/{imodel}/{ispecies}"
+    # idir = f"./model_runs/all_runs/{imodel}/{ispecies}"
+    idir = "/".join(idir.split("/")[:5])  
     iseed = imodel.split(" ")[0].split("_")[1]
     shapdir = f"{idir}/shap"
 
@@ -5004,7 +5054,8 @@ def shap_run_new(
 
     # Load model
     # Check if model exists
-    rf_path = f"./model_runs/all_runs/{imodel}/{ispecies}/final_model/rf_model.pkl"
+    # rf_path = f"./model_runs/all_runs/{imodel}/{ispecies}/final_model/rf_model.pkl"
+    rf_path = f"{idir}/final_model/rf_model.pkl"
     rf = pd.read_pickle(rf_path)
 
     if verbose:
@@ -5089,6 +5140,7 @@ def shap_run_new_loop(
         shap_run_new(
             ispecies=row.species,
             imodel=row.model,
+            idir=row.file,
             run_interaction=run_interaction,
             approximate=approximate,
             test_or_train="test",
@@ -5169,7 +5221,7 @@ def ax_dataset_boxplot(
     # Get ticks
     order_imp = []
     mean_imp = df_imp.median()
-
+    
     for i in range(mean_imp.shape[0]):
         order_imp.append(
             # f"{mean_imp.index[i]} ({mean_imp.values[i].round(1)}%)"
@@ -5250,23 +5302,27 @@ def ax_dataset_boxplot(
             color_rest,
             color_rest,
             ]
-    
-    # Adjust coloring if needed 
-    print("🚨 if the coloring is incorrect, adjust by hand in function 'ax_dataset_boxplot()' ")
-    if pos_spei is not None and pos_temp is not None:
-        palette_order[pos_spei] = color_spei
-        palette_order[pos_temp] = color_temp
-    elif all_or_top9 == "all":
-        palette_order[1] = color_temp
-        palette_order[2] = color_spei
-    elif all_or_top9 == "top9":
-        palette_order[2] = color_temp
-        palette_order[4] = color_spei
-    elif all_or_top9 == "glmm_all":
-        palette_order[4] = color_temp
-        palette_order[5] = color_spei
-    elif all_or_top9 == "glmm_top9":
-        raise ValueError("Fix the palette order in the function!")
+
+    # Get position of SPEI and Temperature for coloring correctly
+    pos_spei = mean_imp.sort_values(ascending=False).index.get_loc("SPEI")
+    pos_temp = mean_imp.sort_values(ascending=False).index.get_loc("Temperature")
+    palette_order[pos_spei] = color_spei
+    palette_order[pos_temp] = color_temp
+    # print("🚨 if the coloring is incorrect, adjust by hand in function 'ax_dataset_boxplot()' ")
+    # if pos_spei is not None and pos_temp is not None:
+    #     palette_order[pos_spei] = color_spei
+    #     palette_order[pos_temp] = color_temp
+    # elif all_or_top9 == "all":
+    #     palette_order[1] = color_temp
+    #     palette_order[2] = color_spei
+    # elif all_or_top9 == "top9":
+    #     palette_order[2] = color_temp
+    #     palette_order[4] = color_spei
+    # elif all_or_top9 == "glmm_all":
+    #     palette_order[4] = color_temp
+    #     palette_order[5] = color_spei
+    # elif all_or_top9 == "glmm_top9":
+    #     raise ValueError("Fix the palette order in the function!")
         
 
     # Map the category to the features in df_imp
@@ -5383,9 +5439,75 @@ def get_species_with_models(return_list_or_dict):
     
     runs_dir = "all_runs"
     allRuns = f"../../notebooks/03_model_fitting_and_analysis/model_runs/{runs_dir}/*/*"
-    print(f" - Looking for species with models in: {allRuns}")
-    
+
     allRuns = glob.glob(allRuns)
+
+    if len(allRuns) == 0:
+        all_runs_sd = "/Volumes/SAMSUNG 1TB/all_runs/*/*"
+        allRuns_sd = glob.glob(all_runs_sd)
+        if len(allRuns_sd) > 0:
+            print(f" - Returning runs saved on SD.")
+            allRuns = allRuns_sd
+        else:
+            print("\nget_species_with_models(): 🚨🚨🚨 No runs found locally, or on external drive. Using hand-coded list of species! 🚨🚨🚨\n")
+            allRuns = [
+                'Fagus sylvatica',
+                'Quercus robur',
+                'Quercus petraea',
+                'Carpinus betulus',
+                'Castanea sativa',
+                'Quercus pubescens',
+                'Pinus sylvestris',
+                'Abies alba',
+                'Picea abies',
+                'Fraxinus excelsior',
+                'Quercus ilex',
+                'Pinus pinaster',
+                'Pseudotsuga menziesii',
+                'Betula pendula',
+                'Pinus nigra',
+                'Corylus avellana',
+                'Acer campestre',
+                'Robinia pseudoacacia',
+                'Acer pseudoplatanus',
+                'Alnus glutinosa',
+                'Populus tremula',
+                'Prunus avium',
+                'Salix caprea',
+                'Populus',
+                'Crataegus monogyna',
+                'Pinus halepensis',
+                'Larix decidua',
+                'Sorbus aria',
+                'Sorbus torminalis',
+                'Tilia cordata',
+                'Ulmus minor',
+                'Arbutus unedo',
+                'Tilia platyphyllos',
+                'Pinus mugo',
+                'Ilex aquifolium',
+                'Quercus pyrenaica',
+                'Salix cinerea',
+                'Betula pubescens',
+                'Picea sitchensis',
+                'Sorbus aucuparia',
+                'Populus nigra',
+                'Salix alba',
+                'Buxus sempervirens',
+                'Sambucus nigra',
+                'Malus sylvestris',
+                'Juniperus communis',
+                'Prunus spinosa',
+                'Abies grandis',
+                'Alnus incana',
+                'Laburnum anagyroides',
+                'Prunus mahaleb',
+                'Frangula alnus'
+                ]
+            return allRuns
+
+    else:
+        print(f" - Returning runs saved locally.")
     
     speciesWithModels = {}
     # Go through all runs
@@ -5425,10 +5547,22 @@ def get_species_with_models(return_list_or_dict):
         return speciesWithModels
     
     
-def calculate_rf_performance(df_in, base_dir, skip_if_csv_exists=True):
+def calculate_rf_performance(df_in, base_dir=None, skip_if_csv_exists=True):
+    
+    # Check if base_dir is provided
+    if base_dir is None:
+        base_dir_in_df = True
+        if "base_dir" not in df_in.columns:
+            raise ValueError(
+                "Please provide a base_dir or ensure 'base_dir' column is present in df_in."
+            )
+    
     for i, row in df_in.iterrows():
         
         # Get paths
+        if base_dir_in_df:
+            base_dir = row.base_dir
+            
         path_rf = f"{base_dir}/{row.model}/{row.species}"
         save_dir = f"{path_rf}/rf_performance"
         os.makedirs(save_dir, exist_ok=True)
@@ -5463,6 +5597,7 @@ def calculate_rf_performance(df_in, base_dir, skip_if_csv_exists=True):
         # Define expected csv files
         expected_roc = f"{save_dir}/roc_auc.csv"
         expected_pr = f"{save_dir}/pr_auc.csv"
+        expected_add = f"{save_dir}/add_metrics.csv"
         
         if skip_if_csv_exists and os.path.isfile(expected_roc):
             pass
@@ -5470,7 +5605,6 @@ def calculate_rf_performance(df_in, base_dir, skip_if_csv_exists=True):
             plot_roc_auc_both(
                 (y_train, y_train_pred_proba),
                 (y_test, y_test_pred_proba),
-                # save_directory=save_directory,
                 save_directory=save_dir,
                 show=False,
                 make_plot=False
@@ -5482,8 +5616,536 @@ def calculate_rf_performance(df_in, base_dir, skip_if_csv_exists=True):
             plot_pr_auc_both(
                 (y_train, y_train_pred_proba),
                 (y_test, y_test_pred_proba),
-                # save_directory=save_directory,
                 save_directory=save_dir,
                 show=False,
                 make_plot=False
             )
+            
+        if False and skip_if_csv_exists and os.path.isfile(expected_add):
+            pass
+        else:
+            # print(f" - Running RF performance for {row.species} ({row.model})")
+            # rf_perfofmance_add_metrics_variable_threshold(
+            rf_perfofmance_add_metrics_fixed_threshold(
+                (y_train, y_train_pred_proba),
+                (y_test, y_test_pred_proba),
+                save_directory=save_dir,
+                show=True,
+                make_plot=True
+            )
+            
+    return []
+            
+            
+def rf_perfofmance_add_metrics_variable_threshold(train_data, test_data, title='Precision, Recall, and F1 vs. Threshold', save_directory=None, show=True, make_plot=True):
+    """
+    Plot Precision, Recall, and F1-score across thresholds for both training and testing data, with bootstrapped uncertainty.
+
+    Parameters:
+    - train_data (tuple): (y_true_train, y_pred_prob_train)
+    - test_data (tuple): (y_true_test, y_pred_prob_test)
+    - title (str): Title for the figure
+    - save_directory (str): Directory to save outputs
+    - show (bool): Whether to display the plot
+    - make_plot (bool): Whether to generate the plot
+    """
+    thresholds = np.arange(0.0, 1.01, 0.1)
+    n_bootstraps = 10
+    random_seed = 42
+
+    def bootstrap_metric_curves(y_true, y_prob):
+        rng = np.random.RandomState(random_seed)
+        metrics = {t: {"precision": [], "recall": [], "f1": []} for t in thresholds}
+
+        y_true = pd.Series(y_true).reset_index(drop=True)
+        y_prob = pd.Series(y_prob).reset_index(drop=True)
+
+        for _ in range(n_bootstraps):
+            indices = rng.choice(len(y_true), size=len(y_true), replace=True)
+            y_true_boot = y_true.iloc[indices]
+            y_prob_boot = y_prob.iloc[indices]
+
+            for t in thresholds:
+                y_pred_boot = (y_prob_boot >= t).astype(int)
+                metrics[t]["precision"].append(precision_score(y_true_boot, y_pred_boot, zero_division=0))
+                metrics[t]["recall"].append(recall_score(y_true_boot, y_pred_boot, zero_division=0))
+                metrics[t]["f1"].append(f1_score(y_true_boot, y_pred_boot, zero_division=0))
+
+        rows = []
+        for t in thresholds:
+            rows.append({
+                "threshold": t,
+                "precision_mean": np.mean(metrics[t]["precision"]),
+                "precision_std": np.std(metrics[t]["precision"]),
+                "recall_mean": np.mean(metrics[t]["recall"]),
+                "recall_std": np.std(metrics[t]["recall"]),
+                "f1_mean": np.mean(metrics[t]["f1"]),
+                "f1_std": np.std(metrics[t]["f1"]),
+            })
+        return pd.DataFrame(rows)
+
+    # Unpack train/test data
+    y_true_train, y_pred_prob_train = train_data
+    y_true_test, y_pred_prob_test = test_data
+
+    # Bootstrap metric curves
+    df_train = bootstrap_metric_curves(y_true_train, y_pred_prob_train)
+    df_test = bootstrap_metric_curves(y_true_test, y_pred_prob_test)
+    
+    # Merge into one DataFrame
+    df_train["dataset"] = "train"
+    df_test["dataset"] = "test"
+    df_both = pd.concat([df_train, df_test], ignore_index=True)
+
+    # Save data
+    if save_directory is not None:
+        os.makedirs(save_directory, exist_ok=True)
+        # df_train.to_csv(f"{save_directory}/add_metrics_train.csv", index=False)
+        # df_test.to_csv(f"{save_directory}/add_metrics__test.csv", index=False)
+        df_both.to_csv(f"{save_directory}/add_metrics_multiple_thresholds.csv", index=False)
+
+    if make_plot:
+        fig, axs = plt.subplots(1, 2, figsize=(14, 5), sharey=True)
+        for ax, df, label, color in zip(
+            axs,
+            [df_train, df_test],
+            ['Training Data', 'Testing Data'],
+            ['tab:blue', 'tab:red']
+        ):
+            ax.plot(df["threshold"], df["precision_mean"], label='Precision', color='tab:blue')
+            ax.fill_between(df["threshold"], df["precision_mean"] - df["precision_std"],
+                            df["precision_mean"] + df["precision_std"], color='tab:blue', alpha=0.2)
+
+            ax.plot(df["threshold"], df["recall_mean"], label='Recall', color='tab:green')
+            ax.fill_between(df["threshold"], df["recall_mean"] - df["recall_std"],
+                            df["recall_mean"] + df["recall_std"], color='tab:green', alpha=0.2)
+
+            ax.plot(df["threshold"], df["f1_mean"], label='F1-score', color='tab:orange')
+            ax.fill_between(df["threshold"], df["f1_mean"] - df["f1_std"],
+                            df["f1_mean"] + df["f1_std"], color='tab:orange', alpha=0.2)
+
+            ax.set_title(label)
+            ax.set_xlabel("Threshold")
+            ax.set_xlim(0, 1)
+            ax.set_ylim(0, 1.05)
+            ax.legend()
+            ax.grid(True)
+
+        axs[0].set_ylabel("Score")
+        fig.suptitle(title, fontsize=12, weight='bold')
+        plt.tight_layout(rect=[0, 0, 1, 0.95])
+
+        if save_directory is not None:
+            plt.savefig(f"{save_directory}/fig-add_metrics_multiple_thresholds.png", dpi=300)
+
+        if show:
+            plt.show()
+        else:
+            plt.close()
+            
+
+def rf_perfofmance_add_metrics_fixed_threshold(train_data, test_data, threshold=0.5, save_directory=None, n_bootstraps=100, random_seed=4, show=True, make_plot=True):
+    """
+    Compute precision, recall, and F1-score at a fixed threshold for train and test data with bootstrapped uncertainty.
+
+    Parameters:
+    - train_data (tuple): (y_true_train, y_pred_prob_train)
+    - test_data (tuple): (y_true_test, y_pred_prob_test)
+    - threshold (float): Classification threshold (default: 0.5)
+    - save_directory (str): Optional directory to save results
+    - n_bootstraps (int): Number of bootstrap iterations
+    - random_seed (int): Seed for reproducibility
+
+    Returns:
+    - pd.DataFrame with mean ± std of metrics for train and test
+    """
+    def bootstrap_metrics(y_true, y_prob):
+        rng = np.random.RandomState(random_seed)
+        precision_list, recall_list, f1_list = [], [], []
+
+        y_true = pd.Series(y_true).reset_index(drop=True)
+        y_prob = pd.Series(y_prob).reset_index(drop=True)
+
+        for _ in range(n_bootstraps):
+            idx = rng.choice(len(y_true), size=len(y_true), replace=True)
+            y_true_boot = y_true.iloc[idx]
+            y_pred_boot = (y_prob.iloc[idx] >= threshold).astype(int)
+
+            precision_list.append(precision_score(y_true_boot, y_pred_boot, zero_division=0))
+            recall_list.append(recall_score(y_true_boot, y_pred_boot, zero_division=0))
+            f1_list.append(f1_score(y_true_boot, y_pred_boot, zero_division=0))
+
+        return {
+            "precision_mean": np.mean(precision_list),
+            "precision_std": np.std(precision_list),
+            "recall_mean": np.mean(recall_list),
+            "recall_std": np.std(recall_list),
+            "f1_mean": np.mean(f1_list),
+            "f1_std": np.std(f1_list),
+        }
+
+    y_true_train, y_pred_prob_train = train_data
+    y_true_test, y_pred_prob_test = test_data
+
+    train_metrics = bootstrap_metrics(y_true_train, y_pred_prob_train)
+    test_metrics = bootstrap_metrics(y_true_test, y_pred_prob_test)
+
+    df_out = pd.DataFrame([{
+        "dataset": "train",
+        **train_metrics
+    }, {
+        "dataset": "test",
+        **test_metrics
+    }])
+
+    if save_directory is not None:
+        os.makedirs(save_directory, exist_ok=True)
+        df_out.to_csv(f"{save_directory}/classification_metrics_fixed_threshold.csv", index=False)
+
+    return df_out
+
+def apply_smote(X, y, seed, k):
+    """
+    Apply SMOTE to the dataset.
+
+    Parameters:
+    - X (pd.DataFrame): Features
+    - y (pd.Series): Target variable
+    - seed (int): Random seed for reproducibility
+    - k (int): Number of nearest neighbors to use in SMOTE
+
+    Returns:
+    - X_resampled (pd.DataFrame): Resampled features
+    - y_resampled (pd.Series): Resampled target variable
+    """
+    # If k is 0, return original data
+    if k == 0:
+        return X, y
+    else:
+        smote = SMOTE(random_state=seed, k_neighbors=k)
+        X_resampled, y_resampled = smote.fit_resample(X, y)
+        return X_resampled, y_resampled 
+    
+# ----------------------------------------------------------------------------------------
+def compare_dist_datasets(train_org, train_smote, smote_k, save_dir):
+
+    fig, axs = plt.subplots(
+        nrows=2,
+        ncols=6,
+        figsize=(18, 7.5),
+    )
+    for i, var in enumerate(train_org.columns):
+        ax = axs[i // 6, i % 6]
+        sns.histplot(
+            train_org[var],
+            color="blue",
+            label="Original",
+            kde=True,
+            stat="density",
+            ax=ax,
+        )
+        sns.histplot(
+            train_smote[var],
+            color="orange",
+            label="SMOTE",
+            kde=True,
+            stat="density",
+            ax=ax,
+        )
+
+        ax.set_xlabel(var)
+        ax.set_ylabel("")
+        if i == 0:
+            ax.legend()
+        if i == 0 or i == 6:
+            ax.set_ylabel("Density")
+
+    # Remove empty subplots if any
+    for j in range(i + 1, 12):
+        ax = axs[j // 6, j % 6]
+        ax.remove()
+
+    plt.suptitle(
+        f"{save_dir.split('/')[-2]} | {save_dir.split('/')[-3]} | k = {smote_k}",
+        fontsize=16,
+    )
+    plt.tight_layout()
+
+    save_dir = save_dir + "/k_" + str(smote_k)
+    os.makedirs(save_dir, exist_ok=True)
+
+    fig.savefig(
+        f"{save_dir}/distribution_org_smote.png",
+        bbox_inches="tight",
+        dpi=300,
+    )
+
+    plt.close(fig)
+
+    print(f" - Saved figure to: {save_dir}/distribution_org_smote.png")
+
+
+# ----------------------------------------------------------------------------------------
+def get_user_input(filename):
+    config_dict = {}
+
+    with open(filename, "r", encoding="utf-8") as f:
+        key = None
+        for line in f:
+            stripped = line.strip()
+            if not stripped:
+                continue
+            if stripped.endswith(":"):
+                # Line is a key with no value
+                key = stripped[:-1]
+                config_dict[key] = None
+            elif ":" in stripped:
+                # Line is a key followed by a list start
+                key, _ = stripped.split(":", 1)
+                key = key.strip()
+            elif stripped.startswith("- "):
+                # Line is a list item
+                value = stripped[2:].strip()
+                if value.lower() == "none":
+                    value = None
+                elif value.lower() == "true":
+                    value = True
+                elif value.lower() == "false":
+                    value = False
+                else:
+                    try:
+                        value = int(value)
+                    except ValueError:
+                        try:
+                            value = float(value)
+                        except ValueError:
+                            pass
+                config_dict[key] = value
+
+    return config_dict
+
+
+def calculate_glmm_performance(df_in, skip_if_csv_exists):
+    
+    for i, row in df_in.iterrows():
+        if not os.path.isfile(row.file):
+            print(f"File missing: {row.file}")
+            continue
+
+        path = row["file"].split("/y_train_pred.csv")[0]
+
+        # Load actual target data and predicted probabilities
+        y_test = pd.read_csv(f"{path}/y_test.csv", index_col=0)
+        y_test_pred_proba = pd.read_csv(f"{path}/y_test_proba.csv", index_col=0)
+
+        y_train = pd.read_csv(f"{path}/y_train.csv", index_col=0)
+        y_train_pred_proba = pd.read_csv(f"{path}/y_train_proba.csv", index_col=0)
+
+        # Quality Control
+        if y_test.shape[0] != y_test_pred_proba.shape[0]:
+            raise ValueError(
+                f"Shapes for test do not match: {y_test.shape[0]} vs {y_test_pred_proba.shape[0]}"
+            )
+        if y_train.shape[0] != y_train.shape[0]:
+            raise ValueError(
+                f"Shapes for train do not match: {y_train.shape[0]} vs {y_train_pred_proba.shape[0]}"
+            )
+
+        # Turn all into series
+        y_test = y_test.iloc[:, 0]
+        y_train = y_train.iloc[:, 0]
+        y_test_pred_proba = y_test_pred_proba.iloc[:, 0]
+        y_train_pred_proba = y_train_pred_proba.iloc[:, 0]
+
+        # Define expected csv files
+        expected_roc = f"{path}/roc_auc.csv"
+        expected_pr = f"{path}/pr_auc.csv"
+        expected_add = f"{path}/add_metrics.csv"
+
+        if skip_if_csv_exists and os.path.isfile(expected_roc):
+            pass
+        else:
+            plot_roc_auc_both(
+                (y_train, y_train_pred_proba),
+                (y_test, y_test_pred_proba),
+                save_directory=path,
+                show=False,
+                make_plot=False,
+            )
+
+        if skip_if_csv_exists and os.path.isfile(expected_pr):
+            pass
+        else:
+            plot_pr_auc_both(
+                (y_train, y_train_pred_proba),
+                (y_test, y_test_pred_proba),
+                save_directory=path,
+                show=False,
+                make_plot=False,
+            )
+
+        if False and skip_if_csv_exists and os.path.isfile(expected_add):
+            pass
+        else:
+            rf_perfofmance_add_metrics_fixed_threshold(
+                (y_train, y_train_pred_proba),
+                (y_test, y_test_pred_proba),
+                save_directory=path,
+                show=True,
+                make_plot=True,
+            )
+            
+            
+def extract_model_species(path):
+    parts = path.strip("/").split("/")
+    return parts[-4], parts[-3]  # model, species
+
+
+def get_metrics_for_all_models_and_species(
+    mean_or_sd,
+    roc_threshold,
+    roc_paths,
+    pr_paths,
+    clf_paths,
+    return_before_aggregation=False,
+):
+    # ! Load and parse all metrics
+    all_metrics = []
+
+    # ROC & PR AUC
+    for path in roc_paths + pr_paths:
+        metric_type = "roc_auc" if "roc_auc" in path else "pr_auc"
+        model, species = extract_model_species(path)
+        df = pd.read_csv(path)
+        for dataset in ["train", "test"]:
+            all_metrics.append(
+                {
+                    "model": model,
+                    "species": species,
+                    "metric": metric_type,
+                    "mean": df[f"{dataset}_mean"][0],
+                    "sd": df[f"{dataset}_sd"][0],
+                    "dataset": dataset,
+                }
+            )
+
+    # Classification metrics (precision, recall, f1)
+    for path in clf_paths:
+        model, species = extract_model_species(path)
+        df = pd.read_csv(path)
+        df_long = pd.melt(
+            df.assign(model=model, species=species),
+            id_vars=["species", "dataset", "model"],
+            value_vars=[
+                "precision_mean",
+                "recall_mean",
+                "f1_mean",
+                "precision_std",
+                "recall_std",
+                "f1_std",
+            ],
+            var_name="metric_stat",
+            value_name="value",
+        )
+        df_long[["metric", "stat"]] = df_long["metric_stat"].str.extract(
+            r"(precision|recall|f1)_(mean|std)"
+        )
+        df_pivot = df_long.pivot(
+            index=["model", "species", "dataset", "metric"], columns="stat", values="value"
+        ).reset_index()
+        df_pivot = df_pivot.rename(columns={"mean": "mean", "std": "sd"})
+        all_metrics.append(df_pivot)
+
+    # Combine into long-format DataFrame
+    df_all_metrics = pd.concat(
+        [pd.DataFrame([m]) if isinstance(m, dict) else m for m in all_metrics],
+        ignore_index=True,
+    )
+    
+    if return_before_aggregation:
+        return df_all_metrics
+
+    # ! Filter by test ROC AUC threshold
+    drop_pairs = df_all_metrics.query(
+        "metric == 'roc_auc' and dataset == 'test' and mean < @roc_threshold"
+    )[["model", "species"]].drop_duplicates()
+    df_all_metrics = df_all_metrics.merge(
+        drop_pairs, on=["model", "species"], how="left", indicator=True
+    )
+    df_all_metrics = df_all_metrics[df_all_metrics["_merge"] == "left_only"].drop(
+        columns="_merge"
+    )
+
+    # ! Count models per species
+    model_counts = df_all_metrics[["model", "species"]].drop_duplicates()
+    n_models_per_species = (
+        model_counts.groupby("species").size().reset_index(name="N Models")
+    )
+
+    # ! Pivot to wide format: (Train|Test) × (ROC AUC, PR AUC, Precision, Recall, F1)
+    if mean_or_sd == "mean":
+        pivot_df = df_all_metrics.pivot_table(
+            index="species", columns=["dataset", "metric"], values="mean", aggfunc="mean"
+        )
+    else:
+        pivot_df = df_all_metrics.pivot_table(
+            index="species", columns=["dataset", "metric"], values="sd", aggfunc="mean"
+        )
+
+    # Column order
+    metric_order = ["roc_auc", "pr_auc", "precision", "recall", "f1"]
+    dataset_order = ["train", "test"]
+    ordered_cols = [
+        (ds, m) for ds in dataset_order for m in metric_order if (ds, m) in pivot_df.columns
+    ]
+    pivot_df = pivot_df[ordered_cols]
+
+    # Clean up column labels
+    pivot_df.columns = pd.MultiIndex.from_tuples(
+        [(ds.capitalize(), m.replace("_", " ").title()) for ds, m in pivot_df.columns]
+    )
+
+    # Add mean and sd across species
+    mean_row = pivot_df.mean(numeric_only=True)
+    sd_row = pivot_df.std(numeric_only=True)
+    pivot_df.loc["Mean"] = mean_row
+    pivot_df.loc["SD"] = sd_row
+
+    # Reset index
+    pivot_df = pivot_df.reset_index().rename(columns={"species": "Species"})
+
+    # Split data and flatten for merge
+    summary_rows = pivot_df[pivot_df["Species"].isin(["Mean", "SD"])]
+    pivot_df_main = pivot_df[~pivot_df["Species"].isin(["Mean", "SD"])]
+    pivot_df_main.columns = [
+        " ".join(col).strip() if isinstance(col, tuple) else col
+        for col in pivot_df_main.columns
+    ]
+
+    # Merge model count
+    pivot_df_main = pivot_df_main.merge(
+        n_models_per_species.rename(columns={"species": "Species"}),
+        on="Species",
+        how="left",
+    )
+
+    # Add empty count to summary rows and flatten them
+    summary_rows["N Models"] = ""
+    summary_rows.columns = [
+        " ".join(col).strip() if isinstance(col, tuple) else col
+        for col in summary_rows.columns
+    ]
+
+    # Combine final table
+    pivot_df_final = pd.concat([pivot_df_main, summary_rows], ignore_index=True)
+
+    # Reorder and round
+    first_cols = ["Species", "N Models"]
+    other_cols = [col for col in pivot_df_final.columns if col not in first_cols]
+    pivot_df_final = pivot_df_final[first_cols + other_cols]
+    if mean_or_sd == "mean":
+        pivot_df_final.iloc[:, 2:] = pivot_df_final.iloc[:, 2:].round(2)
+    else:
+        pivot_df_final.iloc[:, 2:] = pivot_df_final.iloc[:, 2:].round(3)
+    
+    return pivot_df_final

@@ -1,10 +1,10 @@
 # Analysis of Tree Mortality Drivers Across France
 
-This repository contains the data processing, feature engineering, and machine learning analysis code for the study "Flush to Crush: The Paradox of Favourable Springs Leading to Tree Mortality." We analyzed over 500,000 trees from the French National Forest Inventory (2015–2023) to investigate climate-driven mortality trends using explainable machine learning.
+This repository contains the data processing, feature engineering, and machine learning analysis code for the study "Hidden Climate Stressors: A Complex Interplay of Climate Anomalies Shapes European Tree Mortality" We analyzed over 500,000 trees from the French National Forest Inventory (2015–2023) to investigate climate-driven mortality using explainable machine learning.
 
 > [Citation will be added upon publication]
 
-## Table of Contents
+## Table of Content
 
 * [Code and Software](#code-and-software)
     + [System Requirements](#system-requirements)
@@ -140,6 +140,7 @@ This code was developed and executed on the following system specifications:
 ├── notebooks
 │   ├── 01_process_nfi_data
 │   │   ├── 01_clean_raw_nfi_data.ipynb
+│   │   ├── 02_calculate_mortality copy.ipynb
 │   │   ├── 02_calculate_mortality.ipynb
 │   │   └── README.md
 │   ├── 02_collect_features
@@ -163,6 +164,11 @@ This code was developed and executed on the following system specifications:
 │   │   │       └── calculate_spei.R
 │   │   └── README.md
 │   └── 03_model_fitting_and_analysis
+│       ├── 01_model_fitting copy 0.ipynb
+│       ├── 01_model_fitting copy 1.ipynb
+│       ├── 01_model_fitting copy 2.ipynb
+│       ├── 01_model_fitting copy 3.ipynb
+│       ├── 01_model_fitting copy 4.ipynb
 │       ├── 01_model_fitting.ipynb
 │       ├── 02_randomforests_analysis.ipynb
 │       ├── 03_glmm_analysis.ipynb
@@ -175,7 +181,6 @@ This code was developed and executed on the following system specifications:
 │           ├── README.md
 │           └── all_runs
 ├── output
-│   └── README.md
 ├── requirements.txt
 └── src
     ├── curlyBrace.py

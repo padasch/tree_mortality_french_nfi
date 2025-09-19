@@ -31,6 +31,7 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 from matplotlib.ticker import MaxNLocator
 from ydata_profiling import ProfileReport
+import joypy
 
 # Machine learning
 import shap
@@ -3547,7 +3548,7 @@ def calculate_change_per_group_and_year(
 
     # Reset index
     df = df.reset_index(drop=True)
-
+    
     # ! Check grouping variable ---------------------------
     # Check for problematic group levels
     for c in df["group"].unique():
@@ -6370,6 +6371,7 @@ def aggregate_raster_to_csv(
     output_csv_path,
     agg_factor_m,
     save_file=True,
+    load_file=False,
     verbose=False,
 ):
     """
@@ -6384,6 +6386,14 @@ def aggregate_raster_to_csv(
     Returns:
     pandas.DataFrame: The aggregated pixel values and coordinates as a DataFrame.
     """
+    
+    # Check if the input raster file exists
+    if load_file and os.path.exists(output_csv_path):
+        if verbose:
+            print(f"Loading existing file: {output_csv_path}")
+        df = pd.read_csv(output_csv_path)
+        return df
+    
     # Load the raster
     with rasterio.open(input_raster_path) as src:
         raster_data = src.read(1)  # Reading the first band of the raster
@@ -6582,6 +6592,15 @@ def make_map_for_temp_prec_cover(
         extend="both"
         vmin = contour_levels[0]-1
         vmax = contour_levels[-1]+1
+        
+        # Take the aboslute max to have equal color scale
+        vabs = max(abs(vmin), abs(vmax))
+        # Round to nearest highest 1
+        vabs = np.ceil(vabs)
+        vmin = -vabs
+        vmax = vabs
+        # Make evenly spaced ticks
+        contour_levels = np.linspace(vmin, vmax, 7)
         
         file_interpolated = f"../../data/final/climate/trend-total_annual_precipitation-interpolated.feather"
         
@@ -6843,3 +6862,9 @@ def get_latin_to_common():
         "Abies alba": "European silver fir",
         "Picea abies": "Norway spruce",
     }
+    
+def shorten_species_names(s):
+    if s == "Populus":
+        return "PoSp"
+    return s[:2].capitalize() + s.split(" ")[1][:2].capitalize()
+    
