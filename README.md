@@ -140,7 +140,6 @@ This code was developed and executed on the following system specifications:
 ├── notebooks
 │   ├── 01_process_nfi_data
 │   │   ├── 01_clean_raw_nfi_data.ipynb
-│   │   ├── 02_calculate_mortality copy.ipynb
 │   │   ├── 02_calculate_mortality.ipynb
 │   │   └── README.md
 │   ├── 02_collect_features
@@ -164,11 +163,6 @@ This code was developed and executed on the following system specifications:
 │   │   │       └── calculate_spei.R
 │   │   └── README.md
 │   └── 03_model_fitting_and_analysis
-│       ├── 01_model_fitting copy 0.ipynb
-│       ├── 01_model_fitting copy 1.ipynb
-│       ├── 01_model_fitting copy 2.ipynb
-│       ├── 01_model_fitting copy 3.ipynb
-│       ├── 01_model_fitting copy 4.ipynb
 │       ├── 01_model_fitting.ipynb
 │       ├── 02_randomforests_analysis.ipynb
 │       ├── 03_glmm_analysis.ipynb
